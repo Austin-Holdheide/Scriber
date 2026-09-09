@@ -17,7 +17,7 @@ def _get_video(video_id: str, user_id: str):
     except ValueError:
         raise HTTPException(404, "not found")
     r = (admin_client().table("videos")
-         .select("id, filename, storage_path, user_id")
+         .select("id, filename, storage_path, user_id, language")
          .eq("id", video_id).eq("user_id", user_id).limit(1).execute())
     if not r.data:
         raise HTTPException(404, "not found")
@@ -57,7 +57,7 @@ def _stream_file(path: Path, media_type: str, filename: str):
                 yield chunk
     return StreamingResponse(
         gen(), media_type=media_type,
-        headers={"Content-Disposition": f'attachment; filename="{filename}"'},
+        headers={"Content-Disposition": f'attachment; filename="{filename}"'},  # artifacts stay attachment
     )
 
 
@@ -94,11 +94,25 @@ def artifact(video_id: str, kind: str, user_id: str = Depends(get_current_user))
     return _stream_file(path, mt, f"{stem}{ext}")
 
 
+MEDIA_TYPES = {
+    ".mp4": "video/mp4", ".mkv": "video/x-matroska", ".avi": "video/x-msvideo",
+    ".mov": "video/quicktime", ".webm": "video/webm",
+    ".mp3": "audio/mpeg", ".wav": "audio/wav", ".m4a": "audio/mp4",
+    ".flac": "audio/flac", ".ogg": "audio/ogg", ".opus": "audio/opus",
+}
+
+
 @router.get("/{video_id}/download")
 def download(video_id: str, user_id: str = Depends(get_current_user)):
+    # FileResponse: starlette handles HTTP Range (206) natively -> browser media playback
     v = _get_video(video_id, user_id)
     path = Path(settings.media_root) / v["storage_path"]
     if not path.exists():
         raise HTTPException(404, "file missing")
-    return _stream_file(path, "application/octet-stream", v["filename"])
+    ext = path.suffix.lower()
+    mt = MEDIA_TYPES.get(ext, "application/octet-stream")
+    return FileResponse(
+        path, media_type=mt,
+        headers={"Content-Disposition": f'inline; filename="{v["filename"]}"'},
+    )
 

@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from "react";
+import { useNavigate } from "react-router-dom";
 import { supabase, api } from "../lib/supabase";
 import type { VideoRow } from "../lib/types";
 
@@ -13,6 +14,7 @@ export default function Videos() {
   const [uploading, setUploading] = useState<{ name: string; pct: number } | null>(null);
   const [err, setErr] = useState("");
   const fileRef = useRef<HTMLInputElement>(null);
+  const navigate = useNavigate();
 
   const refresh = useCallback(async () => {
     try {
@@ -104,7 +106,8 @@ export default function Videos() {
       {err && <p className="muted" style={{ color: "#f87171" }}>{err}</p>}
 
       {videos.map((v) => (
-        <div key={v.id} className="card">
+        <div key={v.id} className="card" style={{ cursor: "pointer" }}
+             onClick={() => navigate(`/videos/${v.id}`)}>
           <div style={{ minWidth: 0 }}>
             <div style={{ fontWeight: 600, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
               {v.filename}
@@ -119,7 +122,7 @@ export default function Videos() {
           {v.status === "done" && (
             <div style={{ display: "flex", gap: "0.4rem" }}>
               {["srt", "vtt", "txt", "docx"].map((k) => (
-                <button key={k} className="ghost" onClick={() => dl(v, k)}>{k}</button>
+                <button key={k} className="ghost" onClick={(e) => { e.stopPropagation(); dl(v, k); }}>{k}</button>
               ))}
             </div>
           )}

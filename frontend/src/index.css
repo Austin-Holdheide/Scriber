@@ -39,3 +39,35 @@ input {
 .muted { color: #9aa1ad; font-size: 0.85rem; }
 .progressbar { height: 6px; background: #262a33; border-radius: 3px; width: 180px; overflow: hidden; }
 .progressbar > div { height: 100%; background: #2563eb; transition: width 0.5s; }
+
+.container.wide { max-width: 1400px; }
+.player-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(340px, 480px);
+  gap: 1.5rem;
+  align-items: start;
+}
+@media (max-width: 900px) { .player-grid { grid-template-columns: 1fr; } }
+.segments-pane { position: sticky; top: 1rem; display: flex; flex-direction: column; max-height: calc(100vh - 2rem); }
+.searchbar { display: flex; gap: 0.5rem; margin-bottom: 0.75rem; }
+.segment-list {
+  overflow-y: auto; flex: 1; border: 1px solid #262a33; border-radius: 10px;
+  background: #12151c;
+}
+.segment {
+  display: flex; gap: 0.6rem; align-items: baseline;
+  padding: 0.45rem 0.75rem; border-bottom: 1px solid #1c2029;
+  cursor: pointer; transition: background 0.1s;
+}
+.segment:hover { background: #1a1f29; }
+.segment.active { background: #172554; box-shadow: inset 3px 0 0 #3b82f6; }
+.segment.match { background: #1d2b17; }
+.segment.match .text { outline: 1px solid #4ade80; border-radius: 3px; }
+.segment.dimmed { opacity: 0.35; }
+.segment .ts { color: #64748b; font-family: ui-monospace, monospace; font-size: 0.75rem; flex-shrink: 0; }
+.segment .speaker { color: #93c5fd; font-size: 0.8rem; flex-shrink: 0; }
+.segment .text { font-size: 0.92rem; line-height: 1.35; }
+.segment .editbox { display: flex; gap: 0.4rem; flex: 1; align-items: center; }
+.segment .editbox input { flex: 1; padding: 0.3rem 0.5rem; font-size: 0.9rem; }
+.exportrow { display: flex; gap: 0.4rem; align-items: center; margin-top: 0.75rem; }
+.exportrow button { padding: 0.3rem 0.7rem; font-size: 0.8rem; }

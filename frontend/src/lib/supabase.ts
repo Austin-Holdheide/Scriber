@@ -19,7 +19,11 @@ export const api = async (path: string, init: RequestInit = {}) => {
   });
   if (!res.ok) {
     const body = await res.json().catch(() => ({}));
-    throw new Error(body.detail || `${res.status} ${res.statusText}`);
+    const d = body.detail;
+    const msg = typeof d === "string" ? d
+      : Array.isArray(d) ? d.map((x: any) => x.msg || x.message).join("; ")
+      : (d?.message || d?.msg || JSON.stringify(body));
+    throw new Error(msg || `${res.status} ${res.statusText}`);
   }
   return res;
 };
