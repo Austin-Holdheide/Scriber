@@ -1,21 +1,17 @@
 """Transcript + artifact endpoints (W7)."""
 from pathlib import Path
-from fastapi import APIRouter, HTTPException, Request
+from fastapi import APIRouter, Depends, HTTPException, Request
 from fastapi.responses import FileResponse, StreamingResponse, JSONResponse, Response
 
 from app.config import settings
 from app.services.supabase_client import admin_client
+from app.services.auth import get_current_user
 
 router = APIRouter()
 
 
-def _get_video(video_id: str, request: Request):
+def _get_video(video_id: str, user_id: str):
     import uuid as _uuid
-    user_id = request.headers.get("X-User-Id", "")
-    try:
-        _uuid.UUID(user_id)
-    except ValueError:
-        raise HTTPException(403, "invalid user id")
     try:
         _uuid.UUID(video_id)
     except ValueError:
@@ -38,8 +34,8 @@ def _get_transcript(video_id: str):
 
 
 @router.get("/{video_id}/transcript")
-def transcript(video_id: str, request: Request):
-    v = _get_video(video_id, request)
+def transcript(video_id: str, user_id: str = Depends(get_current_user)):
+    v = _get_video(video_id, user_id)
     t = _get_transcript(video_id)
     segs = (admin_client().table("segments")
             .select("start_ms,end_ms,speaker,text,confidence")
@@ -66,8 +62,8 @@ def _stream_file(path: Path, media_type: str, filename: str):
 
 
 @router.get("/{video_id}/artifacts/{kind}")
-def artifact(video_id: str, kind: str, request: Request):
-    v = _get_video(video_id, request)
+def artifact(video_id: str, kind: str, user_id: str = Depends(get_current_user)):
+    v = _get_video(video_id, user_id)
     t = _get_transcript(video_id)
     stem = Path(v["storage_path"]).stem
     kinds = {
@@ -99,8 +95,8 @@ def artifact(video_id: str, kind: str, request: Request):
 
 
 @router.get("/{video_id}/download")
-def download(video_id: str, request: Request):
-    v = _get_video(video_id, request)
+def download(video_id: str, user_id: str = Depends(get_current_user)):
+    v = _get_video(video_id, user_id)
     path = Path(settings.media_root) / v["storage_path"]
     if not path.exists():
         raise HTTPException(404, "file missing")

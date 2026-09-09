@@ -3,12 +3,13 @@ import uuid
 import logging
 from pathlib import Path
 
-from fastapi import APIRouter, HTTPException, UploadFile, File, Request
+from fastapi import APIRouter, Depends, HTTPException, UploadFile, File
 from fastapi.responses import JSONResponse
 
 from app.config import settings
 from app.services.supabase_client import admin_client
 from app.services.queue import enqueue_transcription
+from app.services.auth import get_current_user
 
 log = logging.getLogger("scriber.videos")
 router = APIRouter()
@@ -17,12 +18,8 @@ ALLOWED_EXT = {".mp4", ".mkv", ".avi", ".mov", ".webm", ".mp3", ".wav", ".m4a", 
 
 
 @router.post("/upload")
-async def upload_video(request: Request, file: UploadFile = File(...)):
+async def upload_video(file: UploadFile = File(...), user_id: str = Depends(get_current_user)):
     """Stream upload to NFS; insert videos + jobs rows; enqueue transcription."""
-    user_id = request.headers.get("X-User-Id", "")
-    if not user_id:
-        raise HTTPException(401, "X-User-Id header required (JWT middleware lands later)")
-
     ext = Path(file.filename or "").suffix.lower()
     if ext not in ALLOWED_EXT:
         raise HTTPException(415, f"unsupported file type {ext!r}")
