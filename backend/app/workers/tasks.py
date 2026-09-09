@@ -83,7 +83,22 @@ def transcribe_job(job_row_id: str, video_id: str, storage_path: str, language: 
         # 2. transcribe
         _set_job(job_row_id, "transcribing", 15)
         model = get_model()
-        segments_iter, info = model.transcribe(str(wav), language=language, vad_filter=True)
+        # VAD filtering can drift timestamps on long files (podcasts w/ intros/music):
+        # speech regions are mapped back with accumulated error (~60s over 50min observed).
+        # Short clips keep VAD (faster, kills silence hallucinations); long files get exact
+        # timestamps at the cost of some speed. Duration via ffprobe (info comes from
+        # transcribe() which we haven't called yet).
+        try:
+            probe = subprocess.run(
+                ["ffprobe", "-v", "error", "-show_entries", "format=duration",
+                 "-of", "default=noprint_wrappers=1:nokey=1", str(wav)],
+                check=True, capture_output=True, text=True,
+            )
+            audio_duration_s = float(probe.stdout.strip())
+        except Exception:
+            audio_duration_s = 0.0
+        use_vad = audio_duration_s < 600
+        segments_iter, info = model.transcribe(str(wav), language=language, vad_filter=use_vad)
         segments = []
         last_pulse = time.time()
         for seg in segments_iter:
