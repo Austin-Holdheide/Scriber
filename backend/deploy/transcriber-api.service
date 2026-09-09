@@ -1,0 +1,16 @@
+[Unit]
+Description=Scriber API (FastAPI/uvicorn)
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+User=root
+WorkingDirectory=/opt/scriber/backend
+EnvironmentFile=/opt/scriber/.env
+ExecStart=/opt/scriber/venv/bin/uvicorn app.main:app --host 0.0.0.0 --port 8001 --workers 2
+Restart=on-failure
+RestartSec=3
+
+[Install]
+WantedBy=multi-user.target
