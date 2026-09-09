@@ -6,6 +6,7 @@ from fastapi.responses import FileResponse, StreamingResponse, JSONResponse, Res
 from app.config import settings
 from app.services.supabase_client import admin_client
 from app.services.auth import get_current_user
+from app.services.media_token import issue as issue_media_token, verify as verify_media_token
 
 router = APIRouter()
 
@@ -102,15 +103,72 @@ MEDIA_TYPES = {
 }
 
 
-@router.get("/{video_id}/download")
-def download(video_id: str, user_id: str = Depends(get_current_user)):
-    # FileResponse: starlette handles HTTP Range (206) natively -> browser media playback
+def _sniff_media_type(path: Path) -> str:
+    """True content type from magic bytes (extension lies: jfk.flac renamed .wav etc)."""
+    try:
+        with open(path, "rb") as f:
+            head = f.read(16)
+    except OSError:
+        return "application/octet-stream"
+    if head.startswith(b"RIFF") and head[8:12] == b"WAVE":
+        return "audio/wav"
+    if head.startswith(b"fLaC"):
+        return "audio/flac"
+    if head.startswith(b"OggS"):
+        return "audio/ogg"
+    if head.startswith(b"ID3") or (len(head) > 2 and head[0] == 0xFF and (head[1] & 0xE0) == 0xE0):
+        return "audio/mpeg"
+    if head.startswith(b"\x1aE\xdf\xa3"):  # EBML = mkv/webm
+        return "video/x-matroska"
+    if len(head) > 11 and head[4:8] == b"ftyp":
+        return "video/mp4"
+    # fall back to extension
+    return MEDIA_TYPES.get(path.suffix.lower(), "application/octet-stream")
+
+
+@router.get("/{video_id}/media-token")
+def media_token(video_id: str, user_id: str = Depends(get_current_user)):
+    """Signed short-lived token for <audio>/<video> src (they can't send headers)."""
     v = _get_video(video_id, user_id)
+    return {"token": issue_media_token(video_id, user_id)}
+
+
+@router.get("/{video_id}/download")
+def download(video_id: str, request: Request):
+    """Dual auth: `Authorization: Bearer <jwt>` OR signed ?mt= + ?mu= query params
+    (media elements cannot send Authorization headers)."""
+    import uuid as _uuid
+
+    mt = request.query_params.get("mt", "")
+    mu = request.query_params.get("mu", "")
+    auth_header = request.headers.get("Authorization", "")
+
+    if auth_header.startswith("Bearer "):
+        user_id = get_current_user(request)
+    elif mt and mu:
+        if not verify_media_token(video_id, mu, mt):
+            raise HTTPException(401, "invalid or expired media token")
+        user_id = mu
+    else:
+        raise HTTPException(401, "missing auth")
+
+    try:
+        _uuid.UUID(video_id)
+        _uuid.UUID(user_id)
+    except ValueError:
+        raise HTTPException(404, "not found")
+
+    r = (admin_client().table("videos")
+         .select("id, filename, storage_path, user_id")
+         .eq("id", video_id).eq("user_id", user_id).limit(1).execute())
+    if not r.data:
+        raise HTTPException(404, "not found")
+    v = r.data[0]
+
     path = Path(settings.media_root) / v["storage_path"]
     if not path.exists():
         raise HTTPException(404, "file missing")
-    ext = path.suffix.lower()
-    mt = MEDIA_TYPES.get(ext, "application/octet-stream")
+    mt = _sniff_media_type(path)
     return FileResponse(
         path, media_type=mt,
         headers={"Content-Disposition": f'inline; filename="{v["filename"]}"'},

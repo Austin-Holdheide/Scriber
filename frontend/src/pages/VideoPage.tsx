@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Link, useParams } from "react-router-dom";
-import { api } from "../lib/supabase";
+import { api, supabase } from "../lib/supabase";
 import type { Segment, TranscriptData } from "../lib/types";
 
 const VIDEO_EXT = new Set(["mp4", "mkv", "avi", "mov", "webm"]);
@@ -24,6 +24,7 @@ export default function VideoPage() {
   const [editText, setEditText] = useState("");
   const [saving, setSaving] = useState(false);
   const [activeSeg, setActiveSeg] = useState<number | null>(null);
+  const [mediaSrc, setMediaSrc] = useState<string | null>(null);
 
   const mediaRef = useRef<HTMLVideoElement | HTMLAudioElement | null>(null);
   const listRef = useRef<HTMLDivElement>(null);
@@ -31,10 +32,19 @@ export default function VideoPage() {
 
   // ---- load transcript ----
   useEffect(() => {
-    setData(null); setError(""); setActiveSeg(null);
+    setData(null); setError(""); setActiveSeg(null); setMediaSrc(null);
     api(`/videos/${videoId}/transcript`)
       .then((r) => r.json())
       .then(setData)
+      .catch((e) => setError(e.message));
+    // <audio>/<video> elements cannot send Authorization headers -> signed query token
+    api(`/videos/${videoId}/media-token`)
+      .then((r) => r.json())
+      .then(async ({ token }) => {
+        const { data: u } = await supabase.auth.getUser();
+        const uid = u.user?.id ?? "";
+        setMediaSrc(`/api/videos/${videoId}/download?mt=${encodeURIComponent(token)}&mu=${encodeURIComponent(uid)}`);
+      })
       .catch((e) => setError(e.message));
   }, [videoId]);
 
@@ -142,9 +152,8 @@ export default function VideoPage() {
       </div>
     );
   }
-  if (!data) return <div className="container muted">loading…</div>;
+  if (!data || !mediaSrc) return <div className="container muted">loading…</div>;
 
-  const mediaSrc = `/api/videos/${videoId}/download`;
   const vttSrc = `/api/videos/${videoId}/artifacts/vtt`;
 
   return (
@@ -155,11 +164,11 @@ export default function VideoPage() {
       <div className="player-grid">
         <div className="media-pane">
           {isVideo ? (
-            <video ref={mediaRef as any} src={mediaSrc} controls playsInline style={{ width: "100%", borderRadius: 8, background: "#000" }}>
+            <video ref={mediaRef as any} src={mediaSrc ?? undefined} controls playsInline style={{ width: "100%", borderRadius: 8, background: "#000" }}>
               <track kind="subtitles" src={vttSrc} srcLang="en" default={false} />
             </video>
           ) : (
-            <audio ref={mediaRef as any} src={mediaSrc} controls style={{ width: "100%" }} />
+            <audio ref={mediaRef as any} src={mediaSrc ?? undefined} controls style={{ width: "100%" }} />
           )}
           <div className="muted" style={{ marginTop: "0.5rem" }}>
             {data.segments.length} segments · {data.video.language || "?"} · click a segment to jump
