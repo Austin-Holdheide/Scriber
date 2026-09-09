@@ -23,6 +23,7 @@ done
 
 echo; echo "--- SERVICES ---"
 echo "  api(202):    $(pct exec 202 -- systemctl is-active transcriber-api 2>/dev/null)"
+echo "  caddy(202):  $(pct exec 202 -- systemctl is-active caddy 2>/dev/null) (:80 $(pct exec 202 -- curl -s -o /dev/null -w '%{http_code}' http://localhost/api/health 2>/dev/null))"
 echo "  redis(203):  $(pct exec 203 -- systemctl is-active redis-server 2>/dev/null)"
 echo "  worker(203): $(pct exec 203 -- systemctl is-active rq-worker@203 2>/dev/null)"
 echo "  worker(204): $(pct exec 204 -- systemctl is-active rq-worker@204 2>/dev/null)"

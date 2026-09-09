@@ -1,0 +1,11 @@
+:80 {
+	# 5GB body limit for uploads
+	request_body {
+		max_size 5GB
+	}
+
+	# API -> uvicorn
+	reverse_proxy /api/* localhost:8001
+
+	# W8 will add: root * /opt/scriber/frontend-dist + file_server
+}

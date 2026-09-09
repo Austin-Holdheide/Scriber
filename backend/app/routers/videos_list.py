@@ -14,15 +14,20 @@ def list_videos(user_id: str):
 
 @router.get("/{video_id}")
 def get_video(video_id: str, user_id: str):
+    import uuid as _uuid
+    try:
+        _uuid.UUID(user_id)
+    except ValueError:
+        raise HTTPException(403, "invalid user id")
     r = (
         admin_client()
         .table("videos")
         .select("*")
         .eq("id", video_id)
         .eq("user_id", user_id)
-        .maybe_single()
+        .limit(1)
         .execute()
     )
     if not r.data:
         raise HTTPException(404, "not found")
-    return r.data
+    return r.data[0]
