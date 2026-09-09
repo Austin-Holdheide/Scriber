@@ -39,7 +39,7 @@ def transcript(video_id: str, user_id: str = Depends(get_current_user)):
     v = _get_video(video_id, user_id)
     t = _get_transcript(video_id)
     segs = (admin_client().table("segments")
-            .select("start_ms,end_ms,speaker,text,confidence")
+            .select("id,start_ms,end_ms,speaker,text,confidence")
             .eq("transcript_id", t["id"])
             .order("start_ms").execute())
     return JSONResponse({
