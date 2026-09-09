@@ -1,0 +1,9 @@
+[Unit]
+Description=Scriber stale job requeue
+
+[Service]
+Type=oneshot
+EnvironmentFile=/opt/scriber/.env
+Environment=PYTHONPATH=/opt/scriber/backend
+WorkingDirectory=/opt/scriber/backend
+ExecStart=/opt/scriber/venv/bin/python scripts/requeue_stale.py
