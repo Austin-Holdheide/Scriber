@@ -2,10 +2,10 @@
 
 ## Components
 ```
-[Browser]
-   │  HTTPS (LAN)
+[Browser / curl]
+   │  HTTP (LAN, TLS in W16)
    ▼
-[Caddy :80/:443 — LXC 202 "app"]
+[Caddy :80 — LXC 202 "app"]  (5GB body cap)
    ├── /            → static React build (frontend/dist)
    └── /api/*       → uvicorn FastAPI (127.0.0.1:8000, 2 workers)
                          │
@@ -40,5 +40,5 @@
 - GPU: /dev/nvidia0 → 204, /dev/nvidia1 → 205 (cgroup2 allow + bind mounts; uvm major changes on host reboot - recheck after driver updates).
 
 ## Constraints
-- P4 = Pascal sm_61: INT8 only (DP4A), never FP16. Driver 535 branch (Debian), CUDA 12.x, torch cu121-era wheels (cu128+ dropped Pascal).
+- P4 = Pascal sm_61: INT8 only (DP4A), never FP16. Driver 550.163.01 (Debian non-free), kernel pinned 6.14.11-9-pve (550 can't build on 7.x). CT userland: 550 libs copied host→NFS→/usr/local (bookworm pkgs cap at 535). cublas/cudnn via pip cu12 wheels.
 - Supabase trimmed: analytics/logs overlay, functions/deno-cache, supavisor disabled.
