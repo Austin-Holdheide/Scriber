@@ -13,7 +13,7 @@ def get_queue() -> Queue:
     if _queue is None:
         redis_host = getattr(settings, "redis_host", "192.168.1.203")
         _redis = Redis(host=redis_host, port=6379, db=0)
-        _queue = Queue("transcribe", connection=_redis)
+        _queue = Queue("transcribe-gpu", connection=_redis)
     return _queue
 
 

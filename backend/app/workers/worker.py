@@ -14,7 +14,14 @@ from app.worker_config import wsettings
 logging.basicConfig(level=logging.INFO, format="%(asctime)s %(name)s %(levelname)s %(message)s")
 
 redis = Redis(host=wsettings.redis_host, port=wsettings.redis_port, db=0)
-queue = Queue(wsettings.queue_name, connection=redis)
+
+# GPU workers listen on their own priority queue FIRST, plus the shared fallback queue.
+# CPU workers only listen on the fallback. Prevents CPU workers from stealing jobs
+# that should run on a P4 (user-visible as "why is my transcript small/cpu?").
+if wsettings.device == "cuda":
+    queues = [Queue("transcribe-gpu", connection=redis), Queue(wsettings.queue_name, connection=redis)]
+else:
+    queues = [Queue(wsettings.queue_name, connection=redis)]
 
 if __name__ == "__main__":
     import argparse
@@ -22,5 +29,5 @@ if __name__ == "__main__":
     p.add_argument("--name", default=None)
     args = p.parse_args()
     name = args.name or f"worker-{wsettings.device}"
-    w = Worker([queue], connection=redis, name=name)
+    w = Worker(queues, connection=redis, name=name)
     w.work()
