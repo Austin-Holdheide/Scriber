@@ -183,8 +183,14 @@ def download(video_id: str, request: Request):
     if not path.exists():
         raise HTTPException(404, "file missing")
     mt = _sniff_media_type(path)
+    # Filenames can contain non-latin1 chars (full-width ？ etc.) - raw headers must be
+    # latin-1 encodable. Use RFC 5987: ASCII fallback + filename*=UTF-8 percent-encoded.
+    from urllib.parse import quote
+    fname = v["filename"]
+    ascii_fallback = fname.encode("ascii", "replace").decode().replace('"', "")
+    utf8_name = quote(fname)
     return FileResponse(
         path, media_type=mt,
-        headers={"Content-Disposition": f'inline; filename="{v["filename"]}"'},
+        headers={"Content-Disposition": f"inline; filename=\"{ascii_fallback}\"; filename*=UTF-8''{utf8_name}"},
     )
 
