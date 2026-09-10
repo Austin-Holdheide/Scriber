@@ -32,3 +32,15 @@ RTF = transcribe_time / audio_time (lower = better; <1 = faster than realtime).
   that name silently drops it. Our data param is `job_row_id`.
 - SIGKILLed workers leave stale `rq:worker:<name>` registrations → next start fails with
   "active worker named ... already". Fix: `redis-cli del rq:worker:<name>` then restart.
+
+## Real-world long-file validation (Sep 10, 2026)
+| File | Length | Size | Result |
+|---|---|---|---|
+| WAN Show ep (mp4) | 3h42m | 416MB | 3882 segments, done, in sync hour+ into playback |
+| SCANTRON (mp4) | 36:38 | 93MB | 418 segments, done, in sync |
+
+Hardening from these two files (all fixed & committed):
+- Chunked transcription (10-min chunks, VAD off per chunk) - fixes OOM on long files
+- Duration-aware VAD policy - fixes timestamp drift (was 60s over 50min)
+- PostgREST 1000-row cap - transcripts now paged (FBI: 2172 segs were silently halved)
+- RFC 5987 filename headers - non-latin1 filenames (full-width ？) crashed downloads
