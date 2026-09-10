@@ -7,6 +7,7 @@ Job stages (mirrored into jobs table for Realtime):
 """
 import logging
 import math
+import os
 import subprocess
 import tempfile
 import time
@@ -20,6 +21,8 @@ from app.worker_config import wsettings
 from app.services.supabase_client import admin_client
 
 log = logging.getLogger("scriber.worker")
+
+CHUNK_SECONDS = 600  # 10-minute transcription chunks for long files
 
 # model is loaded once per worker process and kept warm
 _model = None
@@ -80,39 +83,57 @@ def transcribe_job(job_row_id: str, video_id: str, storage_path: str, language: 
         wav = tmp / "audio.wav"
         _extract_audio(str(src), str(wav))
 
-        # 2. transcribe
+        # 2. transcribe - chunked for long files
         _set_job(job_row_id, "transcribing", 15)
         model = get_model()
-        # VAD filtering can drift timestamps on long files (podcasts w/ intros/music):
-        # speech regions are mapped back with accumulated error (~60s over 50min observed).
-        # Short clips keep VAD (faster, kills silence hallucinations); long files get exact
-        # timestamps at the cost of some speed. Duration via ffprobe (info comes from
-        # transcribe() which we haven't called yet).
-        try:
-            probe = subprocess.run(
-                ["ffprobe", "-v", "error", "-show_entries", "format=duration",
-                 "-of", "default=noprint_wrappers=1:nokey=1", str(wav)],
-                check=True, capture_output=True, text=True,
-            )
-            audio_duration_s = float(probe.stdout.strip())
-        except Exception:
-            audio_duration_s = 0.0
-        use_vad = audio_duration_s < 600
-        segments_iter, info = model.transcribe(str(wav), language=language, vad_filter=use_vad)
+        # Two constraints that bite long files:
+        #  - whole-file decode without VAD OOMs the 8GB CT (3.7h audio ~ 850MB float32 + features)
+        #  - VAD avoids the OOM but its region remap drifts timestamps on long files
+        # Solution: fixed 10-minute chunks, VAD off inside each chunk. Constant memory,
+        # exact timestamps, progress per chunk. Single-file path keeps the old behavior.
+        probe = subprocess.run(
+            ["ffprobe", "-v", "error", "-show_entries", "format=duration",
+             "-of", "default=noprint_wrappers=1:nokey=1", str(wav)],
+            check=True, capture_output=True, text=True,
+        )
+        audio_duration_s = float(probe.stdout.strip() or 0)
+
         segments = []
+        detected_lang = None
         last_pulse = time.time()
-        for seg in segments_iter:
-            segments.append({
-                "start_ms": int(seg.start * 1000),
-                "end_ms": int(seg.end * 1000),
-                "text": seg.text.strip(),
-                "confidence": round(float(seg.avg_logprob), 3) if seg.avg_logprob else None,
-            })
-            if time.time() - last_pulse > 5:  # heartbeat every 5s
-                # progress: 15-85 window proportional to audio position
-                pct = 15 + int(70 * min(seg.end / max(info.duration, 0.001), 1.0))
-                _set_job(job_row_id, "transcribing", pct)
-                last_pulse = time.time()
+
+        def _run_chunk(chunk_path: str, offset_s: float, base_pct: float, span: float):
+            nonlocal detected_lang, last_pulse
+            segs_iter, info = model.transcribe(chunk_path, language=language, vad_filter=False)
+            if detected_lang is None and info.language:
+                detected_lang = info.language
+            for seg in segs_iter:
+                segments.append({
+                    "start_ms": int((offset_s + seg.start) * 1000),
+                    "end_ms": int((offset_s + seg.end) * 1000),
+                    "text": seg.text.strip(),
+                    "confidence": round(float(seg.avg_logprob), 3) if seg.avg_logprob else None,
+                })
+                if time.time() - last_pulse > 5:
+                    pct = int(base_pct + span * min(seg.end / max(info.duration, 0.001), 1.0))
+                    _set_job(job_row_id, "transcribing", pct)
+                    last_pulse = time.time()
+
+        if audio_duration_s <= CHUNK_SECONDS:
+            _run_chunk(str(wav), 0.0, 15, 70)
+        else:
+            n_chunks = int(audio_duration_s / CHUNK_SECONDS) + 1
+            for ci in range(n_chunks):
+                offset = ci * CHUNK_SECONDS
+                chunk_wav = tmp / f"chunk_{ci:03d}.wav"
+                subprocess.run(
+                    ["ffmpeg", "-y", "-ss", str(offset), "-t", str(CHUNK_SECONDS),
+                     "-i", str(wav), "-ac", "1", "-ar", "16000", "-f", "wav", str(chunk_wav)],
+                    check=True, capture_output=True,
+                )
+                base_pct = 15 + int(70 * ci / n_chunks)
+                _run_chunk(str(chunk_wav), offset, base_pct, 70.0 / n_chunks)
+                os.unlink(chunk_wav)  # constant tmp usage
 
         if not segments:
             raise RuntimeError("no speech detected")
@@ -152,7 +173,7 @@ def transcribe_job(job_row_id: str, video_id: str, storage_path: str, language: 
         admin_client().table("transcripts").update({
             "srt_path": srt_dest.name, "vtt_path": vtt_dest.name,
         }).eq("id", transcript_id).execute()
-        admin_client().table("videos").update({"status": "done", "language": info.language}).eq("id", video_id).execute()
+        admin_client().table("videos").update({"status": "done", "language": detected_lang}).eq("id", video_id).execute()
         _set_job(job_row_id, "done", 100)
 
         log.info("job %s done: %d segments", job_row_id, len(segments))
