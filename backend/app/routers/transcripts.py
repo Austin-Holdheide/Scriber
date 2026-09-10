@@ -38,14 +38,28 @@ def _get_transcript(video_id: str):
 def transcript(video_id: str, user_id: str = Depends(get_current_user)):
     v = _get_video(video_id, user_id)
     t = _get_transcript(video_id)
-    segs = (admin_client().table("segments")
+    # PostgREST caps a single request at db-max-rows (1000 by default in supabase) and
+    # silently truncates. Page through with Range headers so long transcripts are complete.
+    all_rows: list = []
+    offset = 0
+    page = 1000
+    while True:
+        r = (
+            admin_client().table("segments")
             .select("id,start_ms,end_ms,speaker,text,confidence")
             .eq("transcript_id", t["id"])
-            .order("start_ms").execute())
+            .order("start_ms")
+            .range(offset, offset + page - 1)
+            .execute()
+        )
+        all_rows.extend(r.data)
+        if len(r.data) < page:
+            break
+        offset += page
     return JSONResponse({
         "video": {"id": v["id"], "filename": v["filename"]},
         "full_text": t["full_text"],
-        "segments": segs.data,
+        "segments": all_rows,
     })
 
 
