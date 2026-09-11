@@ -97,12 +97,16 @@ export default function GlobalSearchProvider({ children }: { children: React.Rea
           )}
           <div>
             {hits?.map((h, i) => (
-              <div key={`${h.video_id}-${h.start_ms}-${i}`} className="card" style={{ cursor: "pointer", flexDirection: "column", alignItems: "flex-start", gap: "0.3rem" }} onClick={() => jump(h)}>
-                <div style={{ width: "100%", display: "flex", justifyContent: "space-between", gap: "0.5rem" }}>
-                  <span style={{ fontWeight: 600, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{h.filename}</span>
-                  <span className="muted" style={{ fontFamily: "ui-monospace, monospace", flexShrink: 0 }}>{fmt(h.start_ms)}</span>
+              <div key={`${h.video_id}-${h.start_ms}-${i}`} className="card" style={{ cursor: "pointer" }} onClick={() => jump(h)}>
+                <div style={{ minWidth: 0 }}>
+                  <div style={{ fontWeight: 600, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                    {h.filename}
+                  </div>
+                  <div className="muted">
+                    {fmt(h.start_ms)} · <span className="gheadline" dangerouslySetInnerHTML={{ __html: htmlEscape(h.headline) }} />
+                  </div>
                 </div>
-                <div className="muted gheadline" dangerouslySetInnerHTML={{ __html: htmlEscape(h.headline) }} />
+                <span className="badge working">jump →</span>
               </div>
             ))}
             {hits !== null && hits.length === 0 && !busy && (
