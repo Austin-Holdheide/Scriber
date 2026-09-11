@@ -1,12 +1,14 @@
 import { useEffect, useState } from "react";
-import { BrowserRouter, Link, Route, Routes } from "react-router-dom";
+import { Link, Route, Routes as RR_Routes, useNavigate } from "react-router-dom";
 import { supabase } from "./lib/supabase";
 import Auth from "./components/Auth";
 import Videos from "./components/Videos";
+import SearchPage from "./pages/SearchPage";
 import VideoPage from "./pages/VideoPage";
 
 export default function App() {
   const [session, setSession] = useState<boolean | null>(null);
+  const navigate = useNavigate();
 
   useEffect(() => {
     supabase.auth.getSession().then(({ data }) => setSession(!!data.session));
@@ -17,19 +19,21 @@ export default function App() {
   if (session === null) return <div className="container muted">loading…</div>;
 
   return (
-    <BrowserRouter>
-      <div className="container">
-        <header>
+    <div className="container">
+      <header>
           <h1><Link to="/" style={{ color: "inherit", textDecoration: "none" }}>✦ Scriber</Link></h1>
           {session && (
-            <button className="ghost" onClick={() => supabase.auth.signOut()}>sign out</button>
+            <div style={{ display: "flex", gap: "0.5rem" }}>
+              <button className="ghost" onClick={() => navigate("/search")}>search</button>
+              <button className="ghost" onClick={() => supabase.auth.signOut()}>sign out</button>
+            </div>
           )}
         </header>
-        <Routes>
+        <RR_Routes>
           <Route path="/" element={session ? <Videos /> : <Auth />} />
           <Route path="/videos/:videoId" element={session ? <VideoPage /> : <Auth />} />
-        </Routes>
-      </div>
-    </BrowserRouter>
+          <Route path="/search" element={session ? <SearchPage /> : <Auth />} />
+        </RR_Routes>
+    </div>
   );
 }

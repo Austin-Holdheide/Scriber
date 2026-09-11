@@ -71,3 +71,6 @@ input {
 .segment .editbox input { flex: 1; padding: 0.3rem 0.5rem; font-size: 0.9rem; }
 .exportrow { display: flex; gap: 0.4rem; align-items: center; margin-top: 0.75rem; }
 .exportrow button { padding: 0.3rem 0.7rem; font-size: 0.8rem; }
+
+.searchbar input { width: 100%; }
+.muted b { color: #93c5fd; font-weight: 600; }

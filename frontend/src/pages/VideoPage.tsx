@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { Link, useParams } from "react-router-dom";
+import { Link, useNavigate, useParams, useSearchParams } from "react-router-dom";
 import { api, supabase } from "../lib/supabase";
 import type { Segment, TranscriptData } from "../lib/types";
 
@@ -53,6 +53,22 @@ export default function VideoPage() {
     const ext = data.video.filename.split(".").pop()?.toLowerCase() ?? "";
     return VIDEO_EXT.has(ext);
   }, [data]);
+
+  // deep-link: /videos/:id?t=<ms> -> seek once media is ready
+  const [params] = useSearchParams();
+  const seekOnLoad = useRef(true);
+  useEffect(() => {
+    if (!data || !mediaSrc) return;
+    const t = parseInt(params.get("t") ?? "", 10);
+    if (seekOnLoad.current && !isNaN(t) && t > 0) {
+      seekOnLoad.current = false;
+      // wait for metadata
+      const el = mediaRef.current;
+      const doSeek = () => { el!.currentTime = t / 1000; };
+      if (el && el.readyState >= 1) doSeek();
+      else el?.addEventListener("loadedmetadata", doSeek, { once: true });
+    }
+  }, [data, mediaSrc, params]);
 
   // ---- synced highlight: rAF loop, no react re-render storms ----
   useEffect(() => {
