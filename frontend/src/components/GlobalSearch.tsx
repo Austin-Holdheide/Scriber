@@ -76,47 +76,40 @@ export default function GlobalSearchProvider({ children }: { children: React.Rea
 
   const value: GSearchState = { q, setQ, hits, busy, err };
 
+  const searching = q.trim() !== "";
+
   return (
     <Ctx.Provider value={value}>
-      {q.trim() !== "" ? (
-        // SEARCH MODE: bar + results replace page content
-        <div>
-          <div className="searchbar" style={{ marginBottom: "1rem" }}>
-            <input
-              placeholder="search across all your transcripts…"
-              value={q}
-              onChange={(e) => setQ(e.target.value)}
-              onKeyDown={(e) => { if (e.key === "Escape") { setQ(""); } }}
-              autoFocus
-            />
-          </div>
-          {busy && <p className="muted">searching…</p>}
-          {err && <p className="muted" style={{ color: "#f87171" }}>{err}</p>}
-          {hits !== null && !busy && (
-            <p className="muted">{hits.length} result{hits.length === 1 ? "" : "s"} for “{q}”</p>
-          )}
+      <div className="container">
+        {searching && (
           <div>
-            {hits?.map((h, i) => (
-              <div key={`${h.video_id}-${h.start_ms}-${i}`} className="card" style={{ cursor: "pointer" }} onClick={() => jump(h)}>
-                <div style={{ minWidth: 0 }}>
-                  <div style={{ fontWeight: 600, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
-                    {h.filename}
-                  </div>
-                  <div className="muted">
-                    {fmt(h.start_ms)} · <span className="gheadline" dangerouslySetInnerHTML={{ __html: htmlEscape(h.headline) }} />
-                  </div>
-                </div>
-                <span className="badge working">jump →</span>
-              </div>
-            ))}
-            {hits !== null && hits.length === 0 && !busy && (
-              <p className="muted" style={{ textAlign: "center" }}>nothing found</p>
+            {busy && <p className="muted">searching…</p>}
+            {err && <p className="muted" style={{ color: "#f87171" }}>{err}</p>}
+            {hits !== null && !busy && (
+              <p className="muted">{hits.length} result{hits.length === 1 ? "" : "s"} for “{q}”</p>
             )}
+            <div>
+              {hits?.map((h, i) => (
+                <div key={`${h.video_id}-${h.start_ms}-${i}`} className="card" style={{ cursor: "pointer" }} onClick={() => jump(h)}>
+                  <div style={{ minWidth: 0 }}>
+                    <div style={{ fontWeight: 600, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                      {h.filename}
+                    </div>
+                    <div className="muted">
+                      {fmt(h.start_ms)} · <span className="gheadline" dangerouslySetInnerHTML={{ __html: htmlEscape(h.headline) }} />
+                    </div>
+                  </div>
+                  <span className="badge working">jump →</span>
+                </div>
+              ))}
+              {hits !== null && hits.length === 0 && !busy && (
+                <p className="muted" style={{ textAlign: "center" }}>nothing found</p>
+              )}
+            </div>
           </div>
-        </div>
-      ) : (
-        children
-      )}
+        )}
+        {!searching && children}
+      </div>
     </Ctx.Provider>
   );
 }
