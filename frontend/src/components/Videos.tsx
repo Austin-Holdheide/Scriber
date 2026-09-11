@@ -78,6 +78,16 @@ export default function Videos() {
     return <span className="badge working">{st}</span>;
   };
 
+  const del = async (v: VideoRow) => {
+    if (!confirm(`Delete "${v.filename}"?\nThis removes the file, transcript, and all segments.`)) return;
+    try {
+      await api(`/videos/${v.id}`, { method: "DELETE" });
+      setVideos((prev) => prev.filter((x) => x.id !== v.id));
+    } catch (e: any) {
+      setErr(e.message);
+    }
+  };
+
   const dl = (v: VideoRow, kind: string) => api(`/videos/${v.id}/artifacts/${kind}`)
     .then((r) => r.blob())
     .then((b) => {
@@ -119,13 +129,12 @@ export default function Videos() {
             </div>
           </div>
           {state(v)}
-          {v.status === "done" && (
-            <div style={{ display: "flex", gap: "0.4rem" }}>
-              {["srt", "vtt", "txt", "docx"].map((k) => (
-                <button key={k} className="ghost" onClick={(e) => { e.stopPropagation(); dl(v, k); }}>{k}</button>
-              ))}
-            </div>
-          )}
+          <div style={{ display: "flex", gap: "0.4rem" }}>
+            {v.status === "done" && ["srt", "vtt", "txt", "docx"].map((k) => (
+              <button key={k} className="ghost" onClick={(e) => { e.stopPropagation(); dl(v, k); }}>{k}</button>
+            ))}
+            <button className="ghost del" title="delete" onClick={(e) => { e.stopPropagation(); del(v); }}>✕</button>
+          </div>
         </div>
       ))}
       {videos.length === 0 && <p className="muted" style={{ textAlign: "center" }}>no videos yet — drop one above</p>}
