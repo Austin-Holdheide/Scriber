@@ -74,3 +74,7 @@ input {
 
 .searchbar input { width: 100%; }
 .muted b { color: #93c5fd; font-weight: 600; }
+
+header input.gsearch-input { margin: 0; }
+header { gap: 1rem; }
+.gheadline b { color: #93c5fd; }
