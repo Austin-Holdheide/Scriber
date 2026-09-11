@@ -44,7 +44,6 @@ export default function GlobalSearchProvider({ children }: { children: React.Rea
   const [busy, setBusy] = useState(false);
   const [err, setErr] = useState("");
   const timer = useRef<number | undefined>(undefined);
-  const navigate = useNavigate();
 
   const run = useCallback(async (query: string) => {
     if (!query.trim()) { setHits(null); setBusy(false); setErr(""); return; }
@@ -69,49 +68,9 @@ export default function GlobalSearchProvider({ children }: { children: React.Rea
     return () => window.clearTimeout(timer.current);
   }, [q, run]);
 
-  const jump = (h: Hit) => {
-    setQ(""); setHits(null);
-    navigate(`/videos/${h.video_id}?t=${h.start_ms}`);
-  };
-
   const value: GSearchState = { q, setQ, hits, busy, err };
 
-  const searching = q.trim() !== "";
-
-  return (
-    <Ctx.Provider value={value}>
-      <div className="container">
-        {searching && (
-          <div>
-            {busy && <p className="muted">searching…</p>}
-            {err && <p className="muted" style={{ color: "#f87171" }}>{err}</p>}
-            {hits !== null && !busy && (
-              <p className="muted">{hits.length} result{hits.length === 1 ? "" : "s"} for “{q}”</p>
-            )}
-            <div>
-              {hits?.map((h, i) => (
-                <div key={`${h.video_id}-${h.start_ms}-${i}`} className="card" style={{ cursor: "pointer" }} onClick={() => jump(h)}>
-                  <div style={{ minWidth: 0 }}>
-                    <div style={{ fontWeight: 600, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
-                      {h.filename}
-                    </div>
-                    <div className="muted">
-                      {fmt(h.start_ms)} · <span className="gheadline" dangerouslySetInnerHTML={{ __html: htmlEscape(h.headline) }} />
-                    </div>
-                  </div>
-                  <span className="badge working">jump →</span>
-                </div>
-              ))}
-              {hits !== null && hits.length === 0 && !busy && (
-                <p className="muted" style={{ textAlign: "center" }}>nothing found</p>
-              )}
-            </div>
-          </div>
-        )}
-        {!searching && children}
-      </div>
-    </Ctx.Provider>
-  );
+  return <Ctx.Provider value={value}>{children}</Ctx.Provider>;
 }
 
 export function GlobalSearchInput() {
@@ -125,5 +84,43 @@ export function GlobalSearchInput() {
       onKeyDown={(e) => { if (e.key === "Escape") setQ(""); }}
       style={{ maxWidth: 340, width: "100%" }}
     />
+  );
+}
+
+export function SearchResultsBody() {
+  const { q, setQ, hits, busy, err } = useGlobalSearch();
+  const navigate = useNavigate();
+
+  const jump = (h: Hit) => {
+    setQ("");
+    navigate(`/videos/${h.video_id}?t=${h.start_ms}`);
+  };
+
+  return (
+    <div>
+      {busy && <p className="muted">searching…</p>}
+      {err && <p className="muted" style={{ color: "#f87171" }}>{err}</p>}
+      {hits !== null && !busy && (
+        <p className="muted">{hits.length} result{hits.length === 1 ? "" : "s"} for “{q}”</p>
+      )}
+      <div>
+        {hits?.map((h, i) => (
+          <div key={`${h.video_id}-${h.start_ms}-${i}`} className="card" style={{ cursor: "pointer" }} onClick={() => jump(h)}>
+            <div style={{ minWidth: 0 }}>
+              <div style={{ fontWeight: 600, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                {h.filename}
+              </div>
+              <div className="muted">
+                {fmt(h.start_ms)} · <span className="gheadline" dangerouslySetInnerHTML={{ __html: htmlEscape(h.headline) }} />
+              </div>
+            </div>
+            <span className="badge working">jump →</span>
+          </div>
+        ))}
+        {hits !== null && hits.length === 0 && !busy && (
+          <p className="muted" style={{ textAlign: "center" }}>nothing found</p>
+        )}
+      </div>
+    </div>
   );
 }
