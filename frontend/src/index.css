@@ -81,3 +81,17 @@ header { gap: 1rem; }
 
 button.ghost.del { border-color: #7f1d1d; color: #f87171; padding: 0.3rem 0.55rem; }
 button.ghost.del:hover { background: #450a0a; }
+
+.modal-backdrop {
+  position: fixed; inset: 0; background: rgba(0,0,0,0.6);
+  display: flex; align-items: center; justify-content: center; z-index: 100;
+}
+.modal {
+  background: #161a22; border: 1px solid #3a3f4b; border-radius: 12px;
+  padding: 1.5rem; max-width: 440px; width: calc(100% - 2rem);
+  box-shadow: 0 10px 40px rgba(0,0,0,0.5);
+}
+.modal h3 { margin: 0 0 0.5rem; }
+button.danger { background: #dc2626; }
+button.danger:hover { background: #b91c1c; }
+button.danger:disabled { opacity: 0.6; cursor: wait; }

@@ -13,6 +13,8 @@ export default function Videos() {
   const [drag, setDrag] = useState(false);
   const [uploading, setUploading] = useState<{ name: string; pct: number } | null>(null);
   const [err, setErr] = useState("");
+  const [pendingDel, setPendingDel] = useState<VideoRow | null>(null);
+  const [deleting, setDeleting] = useState(false);
   const fileRef = useRef<HTMLInputElement>(null);
   const navigate = useNavigate();
 
@@ -78,13 +80,17 @@ export default function Videos() {
     return <span className="badge working">{st}</span>;
   };
 
-  const del = async (v: VideoRow) => {
-    if (!confirm(`Delete "${v.filename}"?\nThis removes the file, transcript, and all segments.`)) return;
+  const confirmDel = async () => {
+    if (!pendingDel) return;
+    setDeleting(true);
     try {
-      await api(`/videos/${v.id}`, { method: "DELETE" });
-      setVideos((prev) => prev.filter((x) => x.id !== v.id));
+      await api(`/videos/${pendingDel.id}`, { method: "DELETE" });
+      setVideos((prev) => prev.filter((x) => x.id !== pendingDel.id));
+      setPendingDel(null);
     } catch (e: any) {
       setErr(e.message);
+    } finally {
+      setDeleting(false);
     }
   };
 
@@ -133,11 +139,29 @@ export default function Videos() {
             {v.status === "done" && ["srt", "vtt", "txt", "docx"].map((k) => (
               <button key={k} className="ghost" onClick={(e) => { e.stopPropagation(); dl(v, k); }}>{k}</button>
             ))}
-            <button className="ghost del" title="delete" onClick={(e) => { e.stopPropagation(); del(v); }}>✕</button>
+            <button className="ghost del" title="delete" onClick={(e) => { e.stopPropagation(); setPendingDel(v); }}>✕</button>
           </div>
         </div>
       ))}
       {videos.length === 0 && <p className="muted" style={{ textAlign: "center" }}>no videos yet — drop one above</p>}
+
+      {pendingDel && (
+        <div className="modal-backdrop" onClick={() => !deleting && setPendingDel(null)}>
+          <div className="modal" onClick={(e) => e.stopPropagation()}>
+            <h3>Delete video?</h3>
+            <p style={{ fontWeight: 600, margin: "0.5rem 0" }}>{pendingDel.filename}</p>
+            <p className="muted">
+              This permanently removes the original file, the transcript, and all segments. There is no undo.
+            </p>
+            <div style={{ display: "flex", gap: "0.5rem", justifyContent: "flex-end", marginTop: "1rem" }}>
+              <button className="ghost" disabled={deleting} onClick={() => setPendingDel(null)}>cancel</button>
+              <button className="danger" disabled={deleting} onClick={confirmDel}>
+                {deleting ? "deleting…" : "delete"}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </>
   );
 }
