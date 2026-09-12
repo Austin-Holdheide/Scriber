@@ -23,8 +23,9 @@
         },
         "targets": [
           {
-            "expr": "100 - (avg by (instance) (rate(node_cpu_seconds_total{job=\"scriber-nodes\",mode=\"idle\"}[5m])) * 100)",
-            "refId": "A"
+            "expr": "label_replace(label_replace(label_replace(label_replace(label_replace(100 - (avg by (instance) (rate(node_cpu_seconds_total{job=\"scriber-nodes\",mode=\"idle\"}[5m])) * 100), \"host\", \"supa 201\", \"instance\", \"192.168.1.201:.*\"), \"host\", \"app 202\", \"instance\", \"192.168.1.202:.*\"), \"host\", \"worker 203\", \"instance\", \"192.168.1.203:.*\"), \"host\", \"gpu1 204\", \"instance\", \"192.168.1.204:.*\"), \"host\", \"gpu2 205\", \"instance\", \"192.168.1.205:.*\")",
+            "refId": "A",
+            "legendFormat": "{{host}}"
           }
         ],
         "fieldConfig": {
@@ -59,8 +60,9 @@
         },
         "targets": [
           {
-            "expr": "(1 - (node_memory_MemAvailable_bytes{job=\"scriber-nodes\"} / node_memory_MemTotal_bytes{job=\"scriber-nodes\"})) * 100",
-            "refId": "A"
+            "expr": "label_replace(label_replace(label_replace(label_replace(label_replace((1 - (node_memory_MemAvailable_bytes{job=\"scriber-nodes\"} / node_memory_MemTotal_bytes{job=\"scriber-nodes\"})) * 100, \"host\", \"supa 201\", \"instance\", \"192.168.1.201:.*\"), \"host\", \"app 202\", \"instance\", \"192.168.1.202:.*\"), \"host\", \"worker 203\", \"instance\", \"192.168.1.203:.*\"), \"host\", \"gpu1 204\", \"instance\", \"192.168.1.204:.*\"), \"host\", \"gpu2 205\", \"instance\", \"192.168.1.205:.*\")",
+            "refId": "A",
+            "legendFormat": "{{host}}"
           }
         ],
         "fieldConfig": {
@@ -95,8 +97,9 @@
         },
         "targets": [
           {
-            "expr": "nvidia_utilization_percent{job=\"scriber-gpu\"}",
-            "refId": "A"
+            "expr": "label_replace(label_replace(label_replace(label_replace(label_replace(nvidia_utilization_percent{job=\"scriber-gpu\"}, \"host\", \"supa 201\", \"instance\", \"192.168.1.201:.*\"), \"host\", \"app 202\", \"instance\", \"192.168.1.202:.*\"), \"host\", \"worker 203\", \"instance\", \"192.168.1.203:.*\"), \"host\", \"gpu1 204\", \"instance\", \"192.168.1.204:.*\"), \"host\", \"gpu2 205\", \"instance\", \"192.168.1.205:.*\")",
+            "refId": "A",
+            "legendFormat": "P4 {{host}}"
           }
         ],
         "fieldConfig": {
@@ -131,8 +134,9 @@
         },
         "targets": [
           {
-            "expr": "nvidia_memory_used_mib{job=\"scriber-gpu\"}",
-            "refId": "A"
+            "expr": "label_replace(label_replace(label_replace(label_replace(label_replace(nvidia_memory_used_mib{job=\"scriber-gpu\"}, \"host\", \"supa 201\", \"instance\", \"192.168.1.201:.*\"), \"host\", \"app 202\", \"instance\", \"192.168.1.202:.*\"), \"host\", \"worker 203\", \"instance\", \"192.168.1.203:.*\"), \"host\", \"gpu1 204\", \"instance\", \"192.168.1.204:.*\"), \"host\", \"gpu2 205\", \"instance\", \"192.168.1.205:.*\")",
+            "refId": "A",
+            "legendFormat": "P4 {{host}}"
           }
         ],
         "fieldConfig": {
@@ -167,12 +171,14 @@
         },
         "targets": [
           {
-            "expr": "nvidia_temperature_celsius{job=\"scriber-gpu\"}",
-            "refId": "A"
+            "expr": "label_replace(label_replace(label_replace(label_replace(label_replace(nvidia_temperature_celsius{job=\"scriber-gpu\"}, \"host\", \"supa 201\", \"instance\", \"192.168.1.201:.*\"), \"host\", \"app 202\", \"instance\", \"192.168.1.202:.*\"), \"host\", \"worker 203\", \"instance\", \"192.168.1.203:.*\"), \"host\", \"gpu1 204\", \"instance\", \"192.168.1.204:.*\"), \"host\", \"gpu2 205\", \"instance\", \"192.168.1.205:.*\")",
+            "refId": "A",
+            "legendFormat": "temp {{host}}"
           },
           {
-            "expr": "nvidia_power_watts{job=\"scriber-gpu\"}",
-            "refId": "B"
+            "expr": "label_replace(label_replace(label_replace(label_replace(label_replace(nvidia_power_watts{job=\"scriber-gpu\"}, \"host\", \"supa 201\", \"instance\", \"192.168.1.201:.*\"), \"host\", \"app 202\", \"instance\", \"192.168.1.202:.*\"), \"host\", \"worker 203\", \"instance\", \"192.168.1.203:.*\"), \"host\", \"gpu1 204\", \"instance\", \"192.168.1.204:.*\"), \"host\", \"gpu2 205\", \"instance\", \"192.168.1.205:.*\")",
+            "refId": "B",
+            "legendFormat": "power {{host}}"
           }
         ],
         "fieldConfig": {
@@ -207,8 +213,9 @@
         },
         "targets": [
           {
-            "expr": "(1 - (node_filesystem_avail_bytes{job=\"scriber-nodes\",mountpoint=\"/\"} / node_filesystem_size_bytes{job=\"scriber-nodes\",mountpoint=\"/\"})) * 100",
-            "refId": "A"
+            "expr": "label_replace(label_replace(label_replace(label_replace(label_replace((1 - (node_filesystem_avail_bytes{job=\"scriber-nodes\",mountpoint=\"/\"} / node_filesystem_size_bytes{job=\"scriber-nodes\",mountpoint=\"/\"})) * 100, \"host\", \"supa 201\", \"instance\", \"192.168.1.201:.*\"), \"host\", \"app 202\", \"instance\", \"192.168.1.202:.*\"), \"host\", \"worker 203\", \"instance\", \"192.168.1.203:.*\"), \"host\", \"gpu1 204\", \"instance\", \"192.168.1.204:.*\"), \"host\", \"gpu2 205\", \"instance\", \"192.168.1.205:.*\")",
+            "refId": "A",
+            "legendFormat": "{{host}}"
           }
         ],
         "fieldConfig": {
@@ -243,12 +250,14 @@
         },
         "targets": [
           {
-            "expr": "rate(node_network_receive_bytes_total{job=\"scriber-nodes\",device!=\"lo\"}[5m])*8",
-            "refId": "A"
+            "expr": "label_replace(label_replace(label_replace(label_replace(label_replace(rate(node_network_receive_bytes_total{job=\"scriber-nodes\",device!=\"lo\"}[5m])*8, \"host\", \"supa 201\", \"instance\", \"192.168.1.201:.*\"), \"host\", \"app 202\", \"instance\", \"192.168.1.202:.*\"), \"host\", \"worker 203\", \"instance\", \"192.168.1.203:.*\"), \"host\", \"gpu1 204\", \"instance\", \"192.168.1.204:.*\"), \"host\", \"gpu2 205\", \"instance\", \"192.168.1.205:.*\")",
+            "refId": "A",
+            "legendFormat": "RX {{host}}"
           },
           {
-            "expr": "rate(node_network_transmit_bytes_total{job=\"scriber-nodes\",device!=\"lo\"}[5m])*8",
-            "refId": "B"
+            "expr": "label_replace(label_replace(label_replace(label_replace(label_replace(rate(node_network_transmit_bytes_total{job=\"scriber-nodes\",device!=\"lo\"}[5m])*8, \"host\", \"supa 201\", \"instance\", \"192.168.1.201:.*\"), \"host\", \"app 202\", \"instance\", \"192.168.1.202:.*\"), \"host\", \"worker 203\", \"instance\", \"192.168.1.203:.*\"), \"host\", \"gpu1 204\", \"instance\", \"192.168.1.204:.*\"), \"host\", \"gpu2 205\", \"instance\", \"192.168.1.205:.*\")",
+            "refId": "B",
+            "legendFormat": "TX {{host}}"
           }
         ],
         "fieldConfig": {
