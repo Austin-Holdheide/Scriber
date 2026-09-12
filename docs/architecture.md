@@ -5,7 +5,7 @@
 [Browser / curl]
    │  HTTP (LAN, TLS in W16)
    ▼
-[Caddy :80 — LXC 202 "app"]  (5GB body cap)
+[Caddy :80 — LXC 202 "app"]  (5GB cap; serves React SPA from dist/, proxies /api/*)
    ├── /            → static React build (frontend/dist)
    └── /api/*       → uvicorn FastAPI (127.0.0.1:8000, 2 workers)
                          │

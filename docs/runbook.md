@@ -49,3 +49,32 @@ Same push/extract, then `systemctl restart rq-worker@<id>`.
 ## Recovery
 - Worker CT: wipe venv → redeploy tar → restart unit (documented stack, ~5 min)
 - Supabase: compose down/up in `/root/supabase-project`; DB is on 201 rootfs (vzdump covers it)
+
+## W8-W11 additions (learned from real files)
+
+| Symptom | Cause | Fix |
+|---|---|---|
+| Media plays "no supported format" though file is fine | `<audio>/<video>` can't send Authorization headers → 401 | signed media-token: GET `/api/videos/{id}/media-token` then `?mt=&mu=` on the src (implemented in VideoPage) |
+| MEDIA_ELEMENT_ERROR on correctly-named file | extension lies (jfk.flac uploaded as .wav) | download endpoint sniffs magic bytes for Content-Type |
+| Every segment highlights at once | transcript endpoint returned segments WITHOUT id | select id (fixed); always include PKs in selects |
+| Transcript ends early / "desyncs" past N min | PostgREST 1000-row silent cap | transcript endpoint pages with Range headers |
+| Transcript drifts worse the longer it plays | faster-whisper VAD remap error on long files | VAD only < 10min; long files transcribe without VAD |
+| Both GPU workers OOM-killed on long file | whole-file decode ~850MB float32 for 3.7h audio | 10-min chunked transcription (constant RAM), committed fad3a01 |
+| Download 500 on some files | unicode filename (full-width ？) breaks latin-1 headers | RFC 5987: ascii fallback + filename*=UTF-8'' |
+| Job frozen mid-stage after worker restart/crash | RQ orphans the DB row on hard kill | `scriber-requeue.timer` on 202: requeues any job with no heartbeat > 3 min |
+| CPU worker "steals" jobs from GPUs | all workers raced one queue | GPU workers listen [transcribe-gpu, transcribe]; CPU only [transcribe]; API enqueues to transcribe-gpu |
+
+## Media tokens (for <audio>/<video>)
+- `GET /api/videos/{id}/media-token` (JWT) → `{token: "<expires>:<hmac>"}`
+- Player src: `/api/videos/{id}/download?mt=<token>&mu=<user_id>`
+- HMAC is over video_id + user_id + expiry, secret = SUPABASE_JWT_SECRET (202 .env)
+- TTL 10 min; stateless (no shared storage needed across uvicorn workers)
+- If playback 401s later: check SUPABASE_JWT_SECRET is non-empty on 202 (it was once empty — W8 bug)
+
+## Frontend build
+```bash
+# on 202, with env at build time (anon key is public-by-design):
+cd /opt/scriber/frontend
+VITE_SUPABASE_URL=http://192.168.1.201:8000 VITE_SUPABASE_ANON_KEY=<anon> npm run build
+# dist/ served by Caddy; SPA fallback via try_files
+```
