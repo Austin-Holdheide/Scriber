@@ -95,3 +95,14 @@ button.ghost.del:hover { background: #450a0a; }
 button.danger { background: #dc2626; }
 button.danger:hover { background: #b91c1c; }
 button.danger:disabled { opacity: 0.6; cursor: wait; }
+
+.verror {
+  margin-top: 0.35rem;
+  font-size: 0.82rem;
+  color: #fca5a5;
+  background: #450a0a;
+  border: 1px solid #7f1d1d;
+  border-radius: 6px;
+  padding: 0.4rem 0.6rem;
+  max-width: 520px;
+}

@@ -151,14 +151,20 @@ export default function VideoPage() {
     if (next) seekTo(next.start_ms);
   }, [data, matches, seekTo]);
 
-  const download = (kind: string) => api(`/videos/${videoId}/artifacts/${kind}`)
-    .then((r) => r.blob())
-    .then((b) => {
-      const a = document.createElement("a");
-      a.href = URL.createObjectURL(b);
-      a.download = `${data?.video.filename.replace(/\.[^.]+$/, "")}.${kind}`;
-      a.click();
-    });
+  const dl = (kind: string) => {
+    const url = kind === "video"
+      ? `/videos/${videoId}/download`
+      : `/videos/${videoId}/artifacts/${kind}`;
+    return api(url)
+      .then((r) => r.blob())
+      .then((b) => {
+        const base = (data?.video.filename || "transcript").replace(/\.[^.]+$/, "");
+        const a = document.createElement("a");
+        a.href = URL.createObjectURL(b);
+        a.download = kind === "video" ? (data?.video.filename || "video") : `${base}.${kind}`;
+        a.click();
+      });
+  };
 
   if (error) {
     return (
@@ -186,6 +192,12 @@ export default function VideoPage() {
           ) : (
             <audio ref={mediaRef as any} src={mediaSrc ?? undefined} controls style={{ width: "100%" }} />
           )}
+          <div className="exportrow" style={{ marginTop: "0.6rem" }}>
+            <span className="muted">download:</span>
+            {["srt", "vtt", "txt", "docx", "video"].map((k) => (
+              <button key={k} className="ghost" onClick={() => dl(k)}>{k}</button>
+            ))}
+          </div>
           <div className="muted" style={{ marginTop: "0.5rem" }}>
             {data.segments.length} segments · {data.video.language || "?"} · click a segment to jump
           </div>
@@ -252,12 +264,7 @@ export default function VideoPage() {
             })}
           </div>
 
-          <div className="exportrow">
-            <span className="muted">export:</span>
-            {["srt", "vtt", "txt", "docx"].map((k) => (
-              <button key={k} className="ghost" onClick={() => download(k)}>{k}</button>
-            ))}
-          </div>
+
         </div>
       </div>
     </div>

@@ -4,6 +4,7 @@ export type VideoRow = {
   status: string;
   stage?: string;
   progress?: number;
+  error?: string | null;
   size_bytes?: number | null;
   language?: string | null;
   created_at: string;

@@ -6,6 +6,23 @@ from app.services.auth import get_current_user
 
 router = APIRouter()
 
+# Prefixes the worker emits for USER-FACING failures (curated, human-phrased).
+# Anything else (raw tracebacks, ffmpeg dumps) stays internal.
+_HUMAN_ERROR_PREFIXES = (
+    "Source file is corrupt or incomplete",
+    "Source file unplayable:",
+    "no speech detected",
+    "source missing:",
+)
+
+
+def _human_error(err: str | None) -> str | None:
+    if not err:
+        return None
+    if any(err.startswith(p) for p in _HUMAN_ERROR_PREFIXES):
+        return err
+    return None
+
 
 @router.get("")
 def list_videos(user_id: str = Depends(get_current_user)):
@@ -30,6 +47,7 @@ def list_videos(user_id: str = Depends(get_current_user)):
             if j:
                 v["stage"] = j["stage"]
                 v["progress"] = j["progress"]
+                v["error"] = _human_error(j.get("error"))  # None unless human-readable
     return vids
 
 

@@ -94,15 +94,6 @@ export default function Videos() {
     }
   };
 
-  const dl = (v: VideoRow, kind: string) => api(`/videos/${v.id}/artifacts/${kind}`)
-    .then((r) => r.blob())
-    .then((b) => {
-      const a = document.createElement("a");
-      a.href = URL.createObjectURL(b);
-      a.download = `${v.filename.replace(/\.[^.]+$/, "")}.${kind}`;
-      a.click();
-    });
-
   return (
     <>
       <div
@@ -135,12 +126,7 @@ export default function Videos() {
             </div>
           </div>
           {state(v)}
-          <div style={{ display: "flex", gap: "0.4rem" }}>
-            {v.status === "done" && ["srt", "vtt", "txt", "docx"].map((k) => (
-              <button key={k} className="ghost" onClick={(e) => { e.stopPropagation(); dl(v, k); }}>{k}</button>
-            ))}
-            <button className="ghost del" title="delete" onClick={(e) => { e.stopPropagation(); setPendingDel(v); }}>✕</button>
-          </div>
+          <button className="ghost del" title="delete" onClick={(e) => { e.stopPropagation(); setPendingDel(v); }}>✕</button>
         </div>
       ))}
       {videos.length === 0 && <p className="muted" style={{ textAlign: "center" }}>no videos yet — drop one above</p>}
