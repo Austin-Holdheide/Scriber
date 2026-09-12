@@ -1,0 +1,275 @@
+{
+  "dashboard": {
+    "title": "Scriber Stack",
+    "tags": [
+      "scriber"
+    ],
+    "timezone": "browser",
+    "refresh": "15s",
+    "panels": [
+      {
+        "id": 1,
+        "title": "LXC CPU % (Scriber stack)",
+        "type": "timeseries",
+        "gridPos": {
+          "x": 0,
+          "y": 1,
+          "w": 12,
+          "h": 8
+        },
+        "datasource": {
+          "type": "prometheus",
+          "uid": "cfy1exqh71vcwa"
+        },
+        "targets": [
+          {
+            "expr": "100 - (avg by (instance) (rate(node_cpu_seconds_total{job=\"scriber-nodes\",mode=\"idle\"}[5m])) * 100)",
+            "refId": "A"
+          }
+        ],
+        "fieldConfig": {
+          "defaults": {
+            "unit": "percent"
+          },
+          "overrides": []
+        },
+        "options": {
+          "legend": {
+            "displayMode": "table",
+            "placement": "bottom"
+          },
+          "tooltip": {
+            "mode": "multi"
+          }
+        }
+      },
+      {
+        "id": 2,
+        "title": "LXC RAM used %",
+        "type": "timeseries",
+        "gridPos": {
+          "x": 12,
+          "y": 1,
+          "w": 12,
+          "h": 8
+        },
+        "datasource": {
+          "type": "prometheus",
+          "uid": "cfy1exqh71vcwa"
+        },
+        "targets": [
+          {
+            "expr": "(1 - (node_memory_MemAvailable_bytes{job=\"scriber-nodes\"} / node_memory_MemTotal_bytes{job=\"scriber-nodes\"})) * 100",
+            "refId": "A"
+          }
+        ],
+        "fieldConfig": {
+          "defaults": {
+            "unit": "percent"
+          },
+          "overrides": []
+        },
+        "options": {
+          "legend": {
+            "displayMode": "table",
+            "placement": "bottom"
+          },
+          "tooltip": {
+            "mode": "multi"
+          }
+        }
+      },
+      {
+        "id": 3,
+        "title": "GPU Utilization %",
+        "type": "timeseries",
+        "gridPos": {
+          "x": 0,
+          "y": 9,
+          "w": 12,
+          "h": 8
+        },
+        "datasource": {
+          "type": "prometheus",
+          "uid": "cfy1exqh71vcwa"
+        },
+        "targets": [
+          {
+            "expr": "nvidia_utilization_percent{job=\"scriber-gpu\"}",
+            "refId": "A"
+          }
+        ],
+        "fieldConfig": {
+          "defaults": {
+            "unit": "percent"
+          },
+          "overrides": []
+        },
+        "options": {
+          "legend": {
+            "displayMode": "table",
+            "placement": "bottom"
+          },
+          "tooltip": {
+            "mode": "multi"
+          }
+        }
+      },
+      {
+        "id": 4,
+        "title": "GPU VRAM used (MiB)",
+        "type": "timeseries",
+        "gridPos": {
+          "x": 12,
+          "y": 9,
+          "w": 12,
+          "h": 8
+        },
+        "datasource": {
+          "type": "prometheus",
+          "uid": "cfy1exqh71vcwa"
+        },
+        "targets": [
+          {
+            "expr": "nvidia_memory_used_mib{job=\"scriber-gpu\"}",
+            "refId": "A"
+          }
+        ],
+        "fieldConfig": {
+          "defaults": {
+            "unit": "deckbytes"
+          },
+          "overrides": []
+        },
+        "options": {
+          "legend": {
+            "displayMode": "table",
+            "placement": "bottom"
+          },
+          "tooltip": {
+            "mode": "multi"
+          }
+        }
+      },
+      {
+        "id": 5,
+        "title": "GPU Temp / Power",
+        "type": "timeseries",
+        "gridPos": {
+          "x": 0,
+          "y": 17,
+          "w": 24,
+          "h": 7
+        },
+        "datasource": {
+          "type": "prometheus",
+          "uid": "cfy1exqh71vcwa"
+        },
+        "targets": [
+          {
+            "expr": "nvidia_temperature_celsius{job=\"scriber-gpu\"}",
+            "refId": "A"
+          },
+          {
+            "expr": "nvidia_power_watts{job=\"scriber-gpu\"}",
+            "refId": "B"
+          }
+        ],
+        "fieldConfig": {
+          "defaults": {
+            "unit": "short"
+          },
+          "overrides": []
+        },
+        "options": {
+          "legend": {
+            "displayMode": "table",
+            "placement": "bottom"
+          },
+          "tooltip": {
+            "mode": "multi"
+          }
+        }
+      },
+      {
+        "id": 6,
+        "title": "Rootfs used %",
+        "type": "timeseries",
+        "gridPos": {
+          "x": 0,
+          "y": 24,
+          "w": 12,
+          "h": 8
+        },
+        "datasource": {
+          "type": "prometheus",
+          "uid": "cfy1exqh71vcwa"
+        },
+        "targets": [
+          {
+            "expr": "(1 - (node_filesystem_avail_bytes{job=\"scriber-nodes\",mountpoint=\"/\"} / node_filesystem_size_bytes{job=\"scriber-nodes\",mountpoint=\"/\"})) * 100",
+            "refId": "A"
+          }
+        ],
+        "fieldConfig": {
+          "defaults": {
+            "unit": "percent"
+          },
+          "overrides": []
+        },
+        "options": {
+          "legend": {
+            "displayMode": "table",
+            "placement": "bottom"
+          },
+          "tooltip": {
+            "mode": "multi"
+          }
+        }
+      },
+      {
+        "id": 7,
+        "title": "Network I/O (bits/s)",
+        "type": "timeseries",
+        "gridPos": {
+          "x": 12,
+          "y": 24,
+          "w": 12,
+          "h": 8
+        },
+        "datasource": {
+          "type": "prometheus",
+          "uid": "cfy1exqh71vcwa"
+        },
+        "targets": [
+          {
+            "expr": "rate(node_network_receive_bytes_total{job=\"scriber-nodes\",device!=\"lo\"}[5m])*8",
+            "refId": "A"
+          },
+          {
+            "expr": "rate(node_network_transmit_bytes_total{job=\"scriber-nodes\",device!=\"lo\"}[5m])*8",
+            "refId": "B"
+          }
+        ],
+        "fieldConfig": {
+          "defaults": {
+            "unit": "bps"
+          },
+          "overrides": []
+        },
+        "options": {
+          "legend": {
+            "displayMode": "table",
+            "placement": "bottom"
+          },
+          "tooltip": {
+            "mode": "multi"
+          }
+        }
+      }
+    ],
+    "schemaVersion": 39,
+    "version": 1
+  },
+  "overwrite": true
+}

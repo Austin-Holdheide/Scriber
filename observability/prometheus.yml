@@ -1,0 +1,11 @@
+[Unit] # placeholder
+Description=Scriber GPU metrics exporter
+After=network.target
+
+[Service]
+ExecStart=/opt/scriber/venv/bin/python /opt/scriber/gpu_exporter.py
+Restart=always
+RestartSec=5
+
+[Install]
+WantedBy=multi-user.target
