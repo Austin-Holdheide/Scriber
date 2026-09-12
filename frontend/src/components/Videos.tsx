@@ -115,7 +115,7 @@ export default function Videos() {
       {videos.map((v) => (
         <div key={v.id} className="card" style={{ cursor: "pointer" }}
              onClick={() => navigate(`/videos/${v.id}`)}>
-          <div style={{ minWidth: 0 }}>
+          <div style={{ minWidth: 0, flex: 1 }}>
             <div style={{ fontWeight: 600, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
               {v.filename}
             </div>
@@ -125,7 +125,7 @@ export default function Videos() {
               {new Date(v.created_at).toLocaleString()}
             </div>
           </div>
-          {state(v)}
+          <span className="state-cell">{state(v)}</span>
           <button className="ghost del" title="delete" onClick={(e) => { e.stopPropagation(); setPendingDel(v); }}>✕</button>
         </div>
       ))}
