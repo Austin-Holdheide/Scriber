@@ -1,0 +1,12 @@
+[Unit]
+Description=Scriber app metrics exporter
+After=network.target
+
+[Service]
+EnvironmentFile=/opt/scriber/.env
+ExecStart=/opt/scriber/venv/bin/python /opt/scriber/app_exporter.py
+Restart=always
+RestartSec=5
+
+[Install]
+WantedBy=multi-user.target

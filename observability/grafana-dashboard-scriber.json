@@ -277,6 +277,160 @@
             "mode": "multi"
           }
         }
+      },
+      {
+        "id": 10,
+        "title": "Videos done",
+        "type": "stat",
+        "gridPos": {
+          "x": 0,
+          "y": 31,
+          "w": 6,
+          "h": 6
+        },
+        "datasource": {
+          "type": "prometheus",
+          "uid": "cfy1exqh71vcwa"
+        },
+        "targets": [
+          {
+            "expr": "scriber_videos_status{status=\"done\"}",
+            "refId": "A"
+          }
+        ],
+        "fieldConfig": {
+          "defaults": {
+            "color": {
+              "mode": "thresholds"
+            },
+            "thresholds": {
+              "mode": "absolute",
+              "steps": [
+                {
+                  "color": "green",
+                  "value": null
+                }
+              ]
+            }
+          },
+          "overrides": []
+        },
+        "options": {
+          "colorMode": "value",
+          "graphMode": "area"
+        }
+      },
+      {
+        "id": 11,
+        "title": "Videos queued/working",
+        "type": "stat",
+        "gridPos": {
+          "x": 6,
+          "y": 31,
+          "w": 6,
+          "h": 6
+        },
+        "datasource": {
+          "type": "prometheus",
+          "uid": "cfy1exqh71vcwa"
+        },
+        "targets": [
+          {
+            "expr": "scriber_videos_status{status=~\"queued|transcribing\"}",
+            "refId": "A"
+          }
+        ],
+        "fieldConfig": {
+          "defaults": {
+            "color": {
+              "mode": "thresholds"
+            },
+            "thresholds": {
+              "mode": "absolute",
+              "steps": [
+                {
+                  "color": "blue",
+                  "value": null
+                }
+              ]
+            }
+          },
+          "overrides": []
+        },
+        "options": {
+          "colorMode": "value",
+          "graphMode": "area"
+        }
+      },
+      {
+        "id": 12,
+        "title": "Total segments",
+        "type": "stat",
+        "gridPos": {
+          "x": 12,
+          "y": 31,
+          "w": 6,
+          "h": 6
+        },
+        "datasource": {
+          "type": "prometheus",
+          "uid": "cfy1exqh71vcwa"
+        },
+        "targets": [
+          {
+            "expr": "scriber_segments_total",
+            "refId": "A"
+          }
+        ],
+        "fieldConfig": {
+          "defaults": {
+            "color": {
+              "mode": "thresholds"
+            }
+          },
+          "overrides": []
+        },
+        "options": {
+          "colorMode": "value",
+          "graphMode": "area"
+        }
+      },
+      {
+        "id": 13,
+        "title": "Queue depth (waiting jobs)",
+        "type": "timeseries",
+        "gridPos": {
+          "x": 18,
+          "y": 31,
+          "w": 6,
+          "h": 6
+        },
+        "datasource": {
+          "type": "prometheus",
+          "uid": "cfy1exqh71vcwa"
+        },
+        "targets": [
+          {
+            "expr": "scriber_queue_depth",
+            "refId": "A",
+            "legendFormat": "{{queue}}"
+          }
+        ],
+        "fieldConfig": {
+          "defaults": {
+            "unit": "short"
+          },
+          "overrides": []
+        },
+        "options": {
+          "legend": {
+            "displayMode": "table",
+            "placement": "bottom"
+          },
+          "tooltip": {
+            "mode": "multi"
+          }
+        }
       }
     ],
     "schemaVersion": 39,
