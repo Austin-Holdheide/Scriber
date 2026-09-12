@@ -23,14 +23,16 @@
         },
         "targets": [
           {
-            "expr": "label_replace(label_replace(label_replace(label_replace(label_replace(100 - (avg by (instance) (rate(node_cpu_seconds_total{job=\"scriber-nodes\",mode=\"idle\"}[5m])) * 100), \"host\", \"supa 201\", \"instance\", \"192.168.1.201:.*\"), \"host\", \"app 202\", \"instance\", \"192.168.1.202:.*\"), \"host\", \"worker 203\", \"instance\", \"192.168.1.203:.*\"), \"host\", \"gpu1 204\", \"instance\", \"192.168.1.204:.*\"), \"host\", \"gpu2 205\", \"instance\", \"192.168.1.205:.*\")",
+            "expr": "clamp_max(label_replace(label_replace(label_replace(label_replace(label_replace(100 * (1 - avg by (instance) (rate(node_cpu_seconds_total{job=\"scriber-nodes\",mode=\"idle\"}[5m]))), \"host\", \"supa 201\", \"instance\", \"192.168.1.201:.*\"), \"host\", \"app 202\", \"instance\", \"192.168.1.202:.*\"), \"host\", \"worker 203\", \"instance\", \"192.168.1.203:.*\"), \"host\", \"gpu1 204\", \"instance\", \"192.168.1.204:.*\"), \"host\", \"gpu2 205\", \"instance\", \"192.168.1.205:.*\"), 100)",
             "refId": "A",
             "legendFormat": "{{host}}"
           }
         ],
         "fieldConfig": {
           "defaults": {
-            "unit": "percent"
+            "unit": "percent",
+            "max": 100,
+            "min": 0
           },
           "overrides": []
         },
