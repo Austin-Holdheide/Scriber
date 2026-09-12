@@ -76,6 +76,20 @@ def transcribe_job(job_row_id: str, video_id: str, storage_path: str, language: 
         admin_client().table("videos").update({"status": "failed"}).eq("id", video_id).execute()
         return
 
+    # Health gate: catch corrupt/truncated files (e.g. aborted download -> mp4 without
+    # its moov atom) with a clear message instead of an opaque ffmpeg traceback.
+    probe = subprocess.run(
+        ["ffprobe", "-v", "error", "-show_entries", "format=duration",
+         "-of", "default=noprint_wrappers=1:nokey=1", str(src)],
+        capture_output=True, text=True, timeout=120,
+    )
+    if probe.returncode != 0 or not probe.stdout.strip():
+        detail = (probe.stderr or "").splitlines()
+        hint = "moov atom not found" in (probe.stderr or "") and                " - file looks truncated/incomplete (download likely aborted); re-upload a complete file" or ""
+        _set_job(job_row_id, "failed", 0, f"source file unplayable: {hint or (detail[0] if detail else 'ffprobe failed')}")
+        admin_client().table("videos").update({"status": "failed"}).eq("id", video_id).execute()
+        return
+
     try:
         # 1. extract
         _set_job(job_row_id, "extracting", 5)
