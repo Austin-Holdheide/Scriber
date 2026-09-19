@@ -44,3 +44,13 @@ Hardening from these two files (all fixed & committed):
 - Duration-aware VAD policy - fixes timestamp drift (was 60s over 50min)
 - PostgREST 1000-row cap - transcripts now paged (FBI: 2172 segs were silently halved)
 - RFC 5987 filename headers - non-latin1 filenames (full-width ？) crashed downloads
+
+
+## W12-era validation (Sep 16-18, 2026)
+| Check | Result |
+|---|---|
+| Re-transcribe end-to-end (GPU, post-reboot recovery) | iPhone video: queued -> done 100%, transcript replaced |
+| PDF export (compact layout) | FBI Mafia mp3: 2172/2172 segments, 27 pages, 99KB, 1.2s |
+| Share links public endpoints | transcript 200, media 200 (Range 206 partial), srt/docx/pdf/txt all 200 |
+| ntfy pipeline | publish with auth 200; anonymous 403; worker push on done verified |
+| Hybrid search | "search" 10 -> 41 rows (research included); "transcri" 0 -> 2 rows |
