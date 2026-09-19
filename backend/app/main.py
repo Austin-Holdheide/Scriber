@@ -1,4 +1,4 @@
-"""Scriber API - FastAPI entrypoint."""
+"""Scribly API - FastAPI entrypoint."""
 import logging
 
 from fastapi import FastAPI
@@ -11,7 +11,7 @@ from app.routers.videos_list import router as videos_list_router
 
 logging.basicConfig(level=logging.INFO, format="%(asctime)s %(name)s %(levelname)s %(message)s")
 
-app = FastAPI(title="Scriber API", version="0.1.0")
+app = FastAPI(title="Scribly API", version="0.1.0")
 
 app.add_middleware(
     CORSMiddleware,

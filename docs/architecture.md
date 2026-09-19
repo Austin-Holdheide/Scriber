@@ -1,4 +1,4 @@
-# Scriber — Architecture
+# Scribly (formerly Scriber) — Architecture
 
 ## Components
 ```

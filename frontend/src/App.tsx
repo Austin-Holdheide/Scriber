@@ -24,7 +24,7 @@ export default function App() {
   return (
     <div className="container">
       <header>
-          <h1><Link to="/" style={{ color: "inherit", textDecoration: "none" }}>✦ Scriber</Link></h1>
+          <h1><Link to="/" style={{ color: "inherit", textDecoration: "none" }}>✦ Scribly</Link></h1>
           {session && <GlobalSearchInput />}
           {session && <button className="ghost" onClick={() => supabase.auth.signOut()}>sign out</button>}
         </header>

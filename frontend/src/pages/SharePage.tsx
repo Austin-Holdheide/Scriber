@@ -202,7 +202,7 @@ export default function SharePage() {
         </div>
       </div>
 
-      <p className="muted" style={{ textAlign: "center", marginTop: "1rem" }}>shared via Scriber</p>
+      <p className="muted" style={{ textAlign: "center", marginTop: "1rem" }}>shared via Scribly</p>
     </div>
   );
 }

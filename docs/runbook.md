@@ -1,4 +1,4 @@
-# Scriber Runbook (neo + LXCs)
+# Scribly Runbook (neo + LXCs)
 
 ## Startup order (after host reboot)
 NFS is an AUTOMOUNT now (mounts on first access) and LXCs are onboot=1, so startup is

@@ -40,7 +40,7 @@ def export_pdf(video, transcript, segments, dest: Path) -> Path:
     pdf.set_margins(10, 8, 10)
     pdf.set_auto_page_break(auto=True, margin=10)
     pdf.add_page()
-    pdf.set_title("Scriber transcript")
+    pdf.set_title("Scribly transcript")
 
     pdf.add_font("DejaVu", "", str(FONT_DIR / "DejaVuSans.ttf"))
     pdf.add_font("DejaVu", "B", str(FONT_DIR / "DejaVuSans-Bold.ttf"))
