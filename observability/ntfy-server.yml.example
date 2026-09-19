@@ -1,0 +1,9 @@
+# ntfy server config (CT 203, /etc/ntfy/server.yml)
+# users: ntfy user add <name>; grant: ntfy access <user> 'scriber-*' read-write
+base-url: "http://192.168.1.203:9095"
+listen-http: ":9095"
+cache-file: "/var/lib/ntfy/cache.db"
+cache-duration: "12h"
+auth-file: "/var/lib/ntfy/auth.db"
+auth-default-access: "deny-all"
+behind-proxy: false

@@ -113,3 +113,123 @@ button.danger:disabled { opacity: 0.6; cursor: wait; }
   padding: 0.4rem 0.6rem;
   max-width: 520px;
 }
+
+/* ---- W16 cheap wins: video page job strip + poster ---- */
+.jobstrip {
+  display: flex; align-items: center; gap: 0.6rem;
+  margin: 0 0 1rem; padding: 0.5rem 0.75rem;
+  background: #161a22; border: 1px solid #262a33; border-radius: 8px;
+  flex-wrap: wrap;
+}
+.jobstrip .progressbar { width: 220px; }
+button.ghost.sm { padding: 0.25rem 0.55rem; font-size: 0.78rem; }
+button.ghost.sm.stop { border-color: #7f1d1d; color: #f87171; }
+button.ghost.sm.stop:hover { background: #450a0a; }
+.badge.cancelled { background: #3b2f0b; color: #fbbf24; border: 1px solid #78350f; }
+.verror-inline {
+  font-size: 0.8rem; color: #fca5a5; max-width: 520px;
+}
+
+/* ---- W16: home list thumbnails ---- */
+.video-row { gap: 0.9rem; }
+.thumb {
+  width: 96px; height: 54px; object-fit: cover; border-radius: 6px;
+  background: #0a0c10; border: 1px solid #262a33; flex-shrink: 0;
+}
+.thumb-placeholder {
+  display: flex; align-items: center; justify-content: center;
+  color: #3a3f4b; font-size: 0.9rem;
+}
+
+/* ---- W16: large re-transcribe button under the player ---- */
+button.redo {
+  margin-top: 0.6rem;
+  width: 100%;
+  padding: 0.7rem 1rem;
+  font-size: 1rem;
+  background: #1e3a8a;
+  border: 1px solid #1e40af;
+}
+button.redo:hover { background: #1d4ed8; }
+button.redo:disabled { opacity: 0.6; cursor: wait; }
+
+/* ---- W12: share modal + public page + share button ---- */
+button.sharebtn { padding: 0.7rem 1.1rem; font-size: 0.95rem; }
+.share-row {
+  display: flex; align-items: center; gap: 0.5rem;
+  padding: 0.5rem 0.25rem; border-bottom: 1px solid #1c2029;
+}
+.share-row code { background: #0a0c10; padding: 0.25rem 0.4rem; border-radius: 4px; }
+.share-select {
+  background: #161a22; color: #e6e8eb; border: 1px solid #3a3f4b;
+  padding: 0.45rem 0.5rem; border-radius: 6px; font-size: 0.9rem;
+}
+.sharebar { display: flex; gap: 0.5rem; margin-bottom: 0.75rem; }
+.sharebar input { flex: 1; }
+.share-fulltext {
+  background: #161a22; border: 1px solid #262a33; border-radius: 8px;
+  padding: 0.6rem 0.9rem; margin-bottom: 0.75rem;
+}
+.share-fulltext summary { cursor: pointer; }
+.share-page { max-width: 1000px; }
+
+/* ---- W12: share page mirrors the real viewer ---- */
+.share-page { max-width: 1400px; }
+.share-page .segments-pane { position: sticky; top: 1rem; display: flex; flex-direction: column; max-height: calc(100vh - 6rem); }
+.share-page .segment-list { flex: 1; border: 1px solid #262a33; border-radius: 10px; background: #12151c; overflow-y: auto; }
+.share-page .segment { cursor: pointer; }
+
+/* ---- W12: big share button + hamburger menu ---- */
+button.share-big {
+  flex: 1;
+  padding: 0.85rem 1.2rem;
+  font-size: 1.15rem;
+  font-weight: 600;
+  background: #1d4ed8;
+}
+button.share-big:hover { background: #2563eb; }
+.menu-wrap { position: relative; display: inline-block; }
+button.sharebig-ghost { width: 46px; font-size: 1.2rem; }
+.menu-pop {
+  position: absolute; right: 0; top: calc(100% + 4px); z-index: 50;
+  background: #161a22; border: 1px solid #3a3f4b; border-radius: 8px;
+  min-width: 220px; padding: 0.35rem; box-shadow: 0 8px 30px rgba(0,0,0,0.5);
+  display: flex; flex-direction: column;
+}
+.menu-item {
+  background: transparent; text-align: left; padding: 0.5rem 0.7rem;
+  font-size: 0.92rem; border-radius: 6px; color: #e6e8eb;
+}
+.menu-item:hover { background: #1d4ed8; }
+.menu-sep {
+  font-size: 0.7rem; text-transform: uppercase; letter-spacing: 0.5px;
+  color: #64748b; padding: 0.4rem 0.7rem 0.15rem;
+}
+
+/* ---- W12 v2: hamburger alignment + toast banner + danger item ---- */
+/* actions row: both buttons share the row height, hamburger vertically centered */
+.video-page-actions { display: flex; gap: 0.6rem; margin-top: 0.6rem; align-items: stretch; }
+.menu-wrap { display: flex; align-items: stretch; }
+button.sharebig-ghost {
+  width: 52px; font-size: 1.25rem; height: 100%;
+  display: flex; align-items: center; justify-content: center;
+  padding: 0;
+}
+.menu-item.danger { color: #f87171; border-left: 3px solid #7f1d1d; border-radius: 0 6px 6px 0; margin-top: 0.2rem; }
+.menu-item.danger:hover { background: #450a0a; }
+.toast-banner {
+  position: fixed; top: 14px; left: 50%; transform: translateX(-50%);
+  background: #052e16; color: #4ade80; border: 1px solid #14532d;
+  padding: 0.6rem 1.2rem; border-radius: 8px; font-size: 0.95rem; font-weight: 600;
+  z-index: 200; box-shadow: 0 6px 24px rgba(0,0,0,0.5);
+  animation: toastIn 0.25s ease-out;
+}
+@keyframes toastIn { from { opacity: 0; transform: translateX(-50%) translateY(-8px); } to { opacity: 1; transform: translateX(-50%) translateY(0); } }
+
+/* ---- W12 v3: share download list + compact copy button ---- */
+.share-dl-list {
+  display: flex; gap: 0.4rem; align-items: center; flex-wrap: wrap;
+  margin-top: 0.6rem;
+}
+.share-dl-list .muted { font-size: 0.8rem; margin-right: 0.2rem; }
+button.ghost.sm { padding: 0.3rem 0.65rem; font-size: 0.8rem; }

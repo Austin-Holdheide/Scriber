@@ -1,4 +1,4 @@
-"""Video deletion endpoint (W12 quick-win)."""
+"""Video deletion endpoint."""
 import shutil
 from pathlib import Path
 
@@ -10,7 +10,7 @@ from app.services.auth import get_current_user
 
 router = APIRouter()
 
-ARTIFACT_EXTS = (".srt", ".vtt", ".docx", ".txt")
+ARTIFACT_EXTS = (".srt", ".vtt", ".docx", ".txt", ".thumb.jpg")
 
 
 @router.delete("/{video_id}")

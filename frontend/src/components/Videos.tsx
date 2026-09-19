@@ -5,7 +5,8 @@ import type { VideoRow } from "../lib/types";
 
 const stageLabel: Record<string, string> = {
   queued: "queued", extracting: "extracting audio",
-  transcribing: "transcribing", writing: "writing", done: "done", failed: "failed",
+  transcribing: "transcribing", writing: "writing", cancelled: "cancelled",
+  cancel_requested: "cancelling…", done: "done", failed: "failed",
 };
 
 export default function Videos() {
@@ -15,6 +16,8 @@ export default function Videos() {
   const [err, setErr] = useState("");
   const [pendingDel, setPendingDel] = useState<VideoRow | null>(null);
   const [deleting, setDeleting] = useState(false);
+  const [thumbTokens, setThumbTokens] = useState<Record<string, string>>({});
+  const [toast, setToast] = useState<string | null>((window as any).__scriberToast || null);
   const fileRef = useRef<HTMLInputElement>(null);
   const navigate = useNavigate();
 
@@ -27,6 +30,34 @@ export default function Videos() {
 
   useEffect(() => { refresh(); }, [refresh]);
 
+  // toast banner after redirect from video page (retranscribe/deleted)
+  useEffect(() => {
+    const msg = (window as any).__scriberToast;
+    if (msg) {
+      setToast(msg);
+      (window as any).__scriberToast = null;
+      const t = setTimeout(() => setToast(null), 4000);
+      return () => clearTimeout(t);
+    }
+  }, []);
+
+  // THUMBNAILS: one batched token request, then <img> srcs with signed params
+  useEffect(() => {
+    let alive = true;
+    api("/videos/thumb-tokens", { method: "POST" })
+      .then((r) => r.json())
+      .then(async ({ tokens }: { tokens: Record<string, string> }) => {
+        const { data: u } = await supabase.auth.getUser();
+        const uid = u.user?.id ?? "";
+        const srcs: Record<string, string> = {};
+        for (const [vid, tok] of Object.entries(tokens)) {
+          srcs[vid] = `/api/videos/${vid}/thumbnail?mt=${encodeURIComponent(tok)}&mu=${encodeURIComponent(uid)}`;
+        }
+        setThumbTokens(srcs);
+      })
+      .catch(() => {}); // thumbs are decorative - never block the list on failure
+  }, []);
+
   // LIVE STATUS: subscribe to jobs table changes (Realtime)
   useEffect(() => {
     const channel = supabase
@@ -36,7 +67,7 @@ export default function Videos() {
           const j = payload.new;
           setVideos((prev) =>
             prev.map((v) =>
-              v.id === j.video_id ? { ...v, stage: j.stage, progress: j.progress, status: j.stage === "done" ? "done" : j.stage === "failed" ? "failed" : "working" } : v
+              v.id === j.video_id ? { ...v, stage: j.stage, progress: j.progress, status: j.stage === "done" ? "done" : j.stage === "failed" || j.stage === "cancelled" ? "failed" : "working" } : v
             )
           );
         })
@@ -70,7 +101,8 @@ export default function Videos() {
     const st = v.stage || v.status;
     if (st === "done") return <span className="badge done">done</span>;
     if (st === "failed") return <span className="badge failed">failed</span>;
-    if (["queued", "extracting", "transcribing", "writing"].includes(st))
+    if (st === "cancelled") return <span className="badge cancelled">cancelled</span>;
+    if (["queued", "extracting", "transcribing", "writing", "cancel_requested"].includes(st))
       return (
         <span style={{ display: "flex", alignItems: "center", gap: "0.5rem" }}>
           <span className="badge working">{stageLabel[st] || st}</span>
@@ -111,10 +143,17 @@ export default function Videos() {
           onChange={(e) => { upload(e.target.files); e.target.value = ""; }} />
       </div>
       {err && <p className="muted" style={{ color: "#f87171" }}>{err}</p>}
+      {toast && <div className="toast-banner">{toast}</div>}
 
       {videos.map((v) => (
-        <div key={v.id} className="card" style={{ cursor: "pointer" }}
+        <div key={v.id} className="card video-row" style={{ cursor: "pointer" }}
              onClick={() => navigate(`/videos/${v.id}`)}>
+          {v.has_thumb && thumbTokens[v.id] ? (
+            <img className="thumb" src={thumbTokens[v.id]} alt="" loading="lazy"
+                 onError={(e) => { (e.target as HTMLImageElement).style.visibility = "hidden"; }} />
+          ) : (
+            <div className="thumb thumb-placeholder">▶</div>
+          )}
           <div style={{ minWidth: 0, flex: 1 }}>
             <div style={{ fontWeight: 600, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
               {v.filename}

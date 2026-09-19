@@ -1,6 +1,8 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Link, useNavigate, useParams, useSearchParams } from "react-router-dom";
 import { api, supabase } from "../lib/supabase";
+import ShareModal from "../components/ShareModal";
+import { copyText } from "../lib/clipboard";
 import type { Segment, TranscriptData } from "../lib/types";
 
 const VIDEO_EXT = new Set(["mp4", "mkv", "avi", "mov", "webm"]);
@@ -25,6 +27,17 @@ export default function VideoPage() {
   const [saving, setSaving] = useState(false);
   const [activeSeg, setActiveSeg] = useState<number | null>(null);
   const [mediaSrc, setMediaSrc] = useState<string | null>(null);
+  const [posterSrc, setPosterSrc] = useState<string | null>(null);
+  const [job, setJob] = useState<{ stage: string; progress: number; error?: string | null } | null>(null);
+  const [jobBusy, setJobBusy] = useState(false);
+  const [showShare, setShowShare] = useState(false);
+  const [menuOpen, setMenuOpen] = useState(false);
+  const [deleting, setDeleting] = useState(false);
+  const [toast, setToast] = useState<string | null>(null);
+  const [confirmWhat, setConfirmWhat] = useState<"delete" | "retranscribe" | null>(null);
+  const [copied, setCopied] = useState(false);
+  const [matchesJustCleared, setMatchesJustCleared] = useState<number | null>(null);
+  const navigate = useNavigate();
 
   const mediaRef = useRef<HTMLVideoElement | HTMLAudioElement | null>(null);
   const listRef = useRef<HTMLDivElement>(null);
@@ -32,7 +45,7 @@ export default function VideoPage() {
 
   // ---- load transcript ----
   useEffect(() => {
-    setData(null); setError(""); setActiveSeg(null); setMediaSrc(null);
+    setData(null); setError(""); setActiveSeg(null); setMediaSrc(null); setPosterSrc(null);
     api(`/videos/${videoId}/transcript`)
       .then((r) => r.json())
       .then(setData)
@@ -47,6 +60,41 @@ export default function VideoPage() {
       })
       .catch((e) => setError(e.message));
   }, [videoId]);
+
+  // ---- job status + poster thumbnail ----
+  const loadJob = useCallback(() => {
+    api(`/videos/${videoId}`)
+      .then((r) => r.json())
+      .then((v) => {
+        setJob({ stage: v.stage || v.status, progress: v.progress ?? 0, error: v.error ?? null });
+        if (!v.has_thumb) return setPosterSrc(null);
+        return Promise.all([
+          api(`/videos/${videoId}/media-token`).then((r) => r.json()),
+          supabase.auth.getUser(),
+        ]).then(([{ token }, { data: u }]) => {
+          const uid = u.user?.id ?? "";
+          setPosterSrc(`/api/videos/${videoId}/thumbnail?mt=${encodeURIComponent(token)}&mu=${encodeURIComponent(uid)}`);
+        });
+      })
+      .catch(() => {});
+  }, [videoId]);
+
+  useEffect(() => { loadJob(); }, [loadJob]);
+
+  // live job updates while on this page (Realtime)
+  useEffect(() => {
+    const channel = supabase
+      .channel(`job-live-${videoId}`)
+      .on("postgres_changes", { event: "UPDATE", schema: "public", table: "jobs" },
+        (payload: any) => {
+          const j = payload.new;
+          if (j.video_id !== videoId) return;
+          setJob({ stage: j.stage, progress: j.progress, error: null });
+          if (j.stage === "done" || j.stage === "failed") loadJob(); // refresh transcript link + poster
+        })
+      .subscribe();
+    return () => { supabase.removeChannel(channel); };
+  }, [videoId, loadJob]);
 
   const isVideo = useMemo(() => {
     if (!data) return false;
@@ -104,6 +152,17 @@ export default function VideoPage() {
     return () => cancelAnimationFrame(raf);
   }, [data]);
 
+  useEffect(() => {
+    if (matchesJustCleared == null || !data) return;
+    const t = setTimeout(() => {
+      const el = segEls.current.get(matchesJustCleared);
+      el?.scrollIntoView({ block: "center", behavior: "smooth" });
+      setActiveSeg(matchesJustCleared);
+      setMatchesJustCleared(null);
+    }, 60);
+    return () => clearTimeout(t);
+  }, [matchesJustCleared, data]);
+
   const seekTo = useCallback((ms: number) => {
     const el = mediaRef.current;
     if (el) {
@@ -151,6 +210,63 @@ export default function VideoPage() {
     if (next) seekTo(next.start_ms);
   }, [data, matches, seekTo]);
 
+  // ---- job actions: cancel / retry / re-do ----
+  const jobAction = async (kind: "cancel" | "retranscribe") => {
+    setJobBusy(true);
+    setError("");
+    try {
+      await api(`/videos/${videoId}/${kind}`, { method: "POST" });
+      if (kind === "retranscribe") {
+        goHome("Re-transcription queued ✓ — you can watch progress on the video list");
+        return;
+      }
+      loadJob();
+    } catch (e: any) {
+      setError(e.message);
+    } finally {
+      setJobBusy(false);
+    }
+  };
+
+  const showToast = (msg: string) => {
+    setToast(msg);
+    setTimeout(() => setToast(null), 3200);
+  };
+
+  const goHome = (msg: string) => {
+    navigate("/");
+    // toast lives on window so Videos page renders it right after mount
+    (window as any).__scriberToast = msg;
+    setTimeout(() => { if ((window as any).__scriberToast === msg) (window as any).__scriberToast = null; }, 4000);
+  };
+
+  const deleteVideo = async () => {
+    if (deleting) return;
+    const name = data?.video.filename || "this video";
+    const ok = window.confirm(
+      `Delete "${name}"?\n\nThis permanently removes the original file, the transcript, and all segments. There is no undo.`
+    );
+    if (!ok) return;
+    setDeleting(true);
+    try {
+      await api(`/videos/${videoId}`, { method: "DELETE" });
+      setConfirmWhat(null);
+      goHome("Video deleted ✓");
+    } catch (e: any) {
+      setError(e.message);
+      setDeleting(false);
+    }
+  };
+
+  const copyAll = async () => {
+    if (!data) return;
+    const rows = matches ? data.segments.filter((x) => matches.has(x.id)) : data.segments;
+    const text = rows.map((x) => `[${fmt(x.start_ms)}] ${x.text}`).join("\n");
+    const ok = await copyText(text);
+    setCopied(ok);
+    setTimeout(() => setCopied(false), 2000);
+  };
+
   const dl = (kind: string) => {
     const url = kind === "video"
       ? `/videos/${videoId}/download`
@@ -166,7 +282,7 @@ export default function VideoPage() {
       });
   };
 
-  if (error) {
+  if (error && !data) {
     return (
       <div className="container">
         <Link to="/" className="muted">← back</Link>
@@ -177,26 +293,77 @@ export default function VideoPage() {
   if (!data || !mediaSrc) return <div className="container muted">loading…</div>;
 
   const vttSrc = `/api/videos/${videoId}/artifacts/vtt`;
+  const stage = job?.stage ?? "";
+  const isActiveJob = ["queued", "extracting", "transcribing", "writing", "cancel_requested"].includes(stage);
 
   return (
     <div className="container wide">
       <Link to="/" className="muted">← all videos</Link>
       <h2 style={{ margin: "0.75rem 0 1rem" }}>{data.video.filename}</h2>
 
+      {/* JOB STRIP: only shown while a job runs or when it ended badly */}
+      {(isActiveJob || stage === "failed" || stage === "cancelled") && (
+        <div className="jobstrip">
+          {isActiveJob ? (
+            <>
+              <span className="badge working">{stage === "cancel_requested" ? "cancelling…" : stage}</span>
+              <span className="progressbar" style={{ width: 220 }}><div style={{ width: `${job?.progress ?? 0}%` }} /></span>
+              <span className="muted">{job?.progress ?? 0}%</span>
+              {stage !== "cancel_requested" && (
+                <button className="ghost sm stop" disabled={jobBusy} onClick={() => jobAction("cancel")}>■ stop</button>
+              )}
+            </>
+          ) : stage === "failed" ? (
+            <>
+              <span className="badge failed">failed</span>
+              {job?.error && <span className="verror-inline">{job.error}</span>}
+            </>
+          ) : (
+            <span className="badge cancelled">cancelled</span>
+          )}
+        </div>
+      )}
+      {error && <p className="muted" style={{ color: "#f87171" }}>{error}</p>}
+      {toast && <div className="toast-banner">{toast}</div>}
+
       <div className="player-grid">
         <div className="media-pane">
           {isVideo ? (
-            <video ref={mediaRef as any} src={mediaSrc ?? undefined} controls playsInline style={{ width: "100%", borderRadius: 8, background: "#000" }}>
+            <video ref={mediaRef as any} src={mediaSrc ?? undefined} poster={posterSrc ?? undefined}
+              controls playsInline style={{ width: "100%", borderRadius: 8, background: "#000" }}>
               <track kind="subtitles" src={vttSrc} srcLang="en" default={false} />
             </video>
           ) : (
             <audio ref={mediaRef as any} src={mediaSrc ?? undefined} controls style={{ width: "100%" }} />
           )}
-          <div className="exportrow" style={{ marginTop: "0.6rem" }}>
-            <span className="muted">download:</span>
-            {["srt", "vtt", "txt", "docx", "video"].map((k) => (
-              <button key={k} className="ghost" onClick={() => dl(k)}>{k}</button>
-            ))}
+          <div className="video-page-actions">
+            <button className="share-big" onClick={() => setShowShare(true)}
+              title="Create a read-only share link">🔗 Share</button>
+            <div className="menu-wrap">
+              <button className="ghost sharebig-ghost" onClick={() => setMenuOpen(!menuOpen)}
+                title="More actions">☰</button>
+              {menuOpen && (
+                <div className="menu-pop" onClick={() => setMenuOpen(false)}>
+                  {!isActiveJob && (
+                    <button className="menu-item" disabled={jobBusy}
+                      onClick={() => setConfirmWhat("retranscribe")}
+                      title="Re-run transcription with the current pipeline (replaces this transcript)">
+                      {stage === "failed" || stage === "cancelled" ? "↻ Retry transcription" : "↻ Re-transcribe"}
+                    </button>
+                  )}
+                  <div className="menu-sep">danger zone</div>
+                  <button className="menu-item danger" disabled={deleting} onClick={() => setConfirmWhat("delete")}>
+                    🗑 Delete video
+                  </button>
+                  <div className="menu-sep">download</div>
+                  {["srt", "docx", "pdf", "video"].map((k) => (
+                    <button key={k} className="menu-item" onClick={() => dl(k)}>
+                      ↓ {k === "video" ? (isVideo ? "original video" : "original audio") : k.toUpperCase()}
+                    </button>
+                  ))}
+                </div>
+              )}
+            </div>
           </div>
           <div className="muted" style={{ marginTop: "0.5rem" }}>
             {data.segments.length} segments · {data.video.language || "?"} · click a segment to jump
@@ -215,13 +382,18 @@ export default function VideoPage() {
             {query && (
               <button className="ghost" onClick={jumpNext} title="jump to next match">↓</button>
             )}
+            <button className="ghost" onClick={copyAll}
+              title={matches ? "Copy the search results" : "Copy all segments"}>
+              {copied ? "✓" : matches ? `copy ${matches.size}` : "copy all"}
+            </button>
           </div>
 
           <div className="segment-list" ref={listRef}>
-            {data.segments.map((s) => {
+            {data.segments
+              .filter((s) => !matches || matches.has(s.id))
+              .map((s) => {
               const isActive = activeSeg === s.id;
               const isMatch = matches?.has(s.id);
-              const dimmed = matches && !isMatch;
               return (
                 <div
                   key={s.id}
@@ -230,9 +402,11 @@ export default function VideoPage() {
                     "segment",
                     isActive ? "active" : "",
                     isMatch ? "match" : "",
-                    dimmed ? "dimmed" : "",
                   ].join(" ")}
-                  onClick={() => seekTo(s.start_ms)}
+                  onClick={() => {
+                    seekTo(s.start_ms);
+                    if (matches) { setQuery(""); setMatchesJustCleared(s.id); }
+                  }}
                 >
                   <span className="ts">{fmt(s.start_ms)}</span>
                   {s.speaker && <span className="speaker">{s.speaker}</span>}
@@ -261,12 +435,54 @@ export default function VideoPage() {
                   )}
                 </div>
               );
-            })}
+              })}
+              {matches && matches.size === 0 && (
+                <div className="muted" style={{ padding: "1rem", textAlign: "center" }}>no matches</div>
+              )}
           </div>
-
-
         </div>
       </div>
+
+      {confirmWhat && (
+        <div className="modal-backdrop" onClick={() => !deleting && !jobBusy && setConfirmWhat(null)}>
+          <div className="modal" onClick={(e) => e.stopPropagation()}>
+            {confirmWhat === "delete" ? (
+              <>
+                <h3>Delete video?</h3>
+                <p style={{ fontWeight: 600, margin: "0.5rem 0" }}>{data.video.filename}</p>
+                <p className="muted">
+                  This permanently removes the original file, the transcript, and all segments. There is no undo.
+                </p>
+                <div style={{ display: "flex", gap: "0.5rem", justifyContent: "flex-end", marginTop: "1rem" }}>
+                  <button className="ghost" disabled={deleting} onClick={() => setConfirmWhat(null)}>cancel</button>
+                  <button className="danger" disabled={deleting} onClick={deleteVideo}>
+                    {deleting ? "deleting…" : "delete"}
+                  </button>
+                </div>
+              </>
+            ) : (
+              <>
+                <h3>{stage === "failed" || stage === "cancelled" ? "Retry transcription?" : "Re-transcribe?"}</h3>
+                <p style={{ fontWeight: 600, margin: "0.5rem 0" }}>{data.video.filename}</p>
+                <p className="muted">
+                  The current transcript and all exports (SRT/DOCX/PDF) will be replaced by a fresh run
+                  through the current pipeline. This cannot be undone once it starts.
+                </p>
+                <div style={{ display: "flex", gap: "0.5rem", justifyContent: "flex-end", marginTop: "1rem" }}>
+                  <button className="ghost" disabled={jobBusy} onClick={() => setConfirmWhat(null)}>cancel</button>
+                  <button disabled={jobBusy} onClick={async () => { setConfirmWhat(null); await jobAction("retranscribe"); }}>
+                    {jobBusy ? "queueing…" : stage === "failed" || stage === "cancelled" ? "retry" : "re-transcribe"}
+                  </button>
+                </div>
+              </>
+            )}
+          </div>
+        </div>
+      )}
+
+      {showShare && (
+        <ShareModal videoId={videoId} filename={data.video.filename} onClose={() => setShowShare(false)} />
+      )}
     </div>
   );
 }

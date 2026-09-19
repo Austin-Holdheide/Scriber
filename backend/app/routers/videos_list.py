@@ -3,6 +3,7 @@ from fastapi import APIRouter, Depends, HTTPException
 
 from app.services.supabase_client import admin_client
 from app.services.auth import get_current_user
+from app.services.thumbs import thumb_path_for
 
 router = APIRouter()
 
@@ -48,6 +49,8 @@ def list_videos(user_id: str = Depends(get_current_user)):
                 v["stage"] = j["stage"]
                 v["progress"] = j["progress"]
                 v["error"] = _human_error(j.get("error"))  # None unless human-readable
+            tp = thumb_path_for(v["storage_path"])
+            v["has_thumb"] = bool(tp and tp.exists())
     return vids
 
 
@@ -60,4 +63,7 @@ def get_video(video_id: str, user_id: str = Depends(get_current_user)):
     )
     if not r.data:
         raise HTTPException(404, "not found")
-    return r.data[0]
+    v = r.data[0]
+    tp = thumb_path_for(v["storage_path"])
+    v["has_thumb"] = bool(tp and tp.exists())
+    return v

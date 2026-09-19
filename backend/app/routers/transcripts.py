@@ -7,6 +7,26 @@ from app.config import settings
 from app.services.supabase_client import admin_client
 from app.services.auth import get_current_user
 from app.services.media_token import issue as issue_media_token, verify as verify_media_token
+from app.services.pdf_export import export_pdf
+
+
+def _all_segments(transcript_id: str) -> list:
+    """Paged fetch - PostgREST caps single requests (1000 rows) and silently truncates."""
+    all_rows: list = []
+    offset, page = 0, 1000
+    while True:
+        r = (admin_client().table("segments")
+             .select("start_ms,speaker,text")
+             .eq("transcript_id", transcript_id)
+             .order("start_ms")
+             .range(offset, offset + page - 1)
+             .execute())
+        all_rows.extend(r.data)
+        if len(r.data) < page:
+            break
+        offset += page
+    return all_rows
+
 
 router = APIRouter()
 
@@ -97,13 +117,15 @@ def artifact(video_id: str, kind: str, user_id: str = Depends(get_current_user))
         from app.services.docx_export import export_docx
         dest = Path(settings.media_root) / Path(v["storage_path"]).parent / (stem + ".docx")
         if not dest.exists():
-            segs = (admin_client().table("segments")
-                    .select("start_ms,speaker,text").eq("transcript_id", t["id"])
-                    .order("start_ms").execute())
-            export_docx(v, t, segs.data, dest)
+            export_docx(v, t, _all_segments(t["id"]), dest)
         return _stream_file(dest, "application/vnd.openxmlformats-officedocument.wordprocessingml.document", f"{stem}.docx")
+    if kind == "pdf":
+        dest = Path(settings.media_root) / Path(v["storage_path"]).parent / (stem + ".pdf")
+        if not dest.exists():
+            export_pdf(v, t, _all_segments(t["id"]), dest)
+        return _stream_file(dest, "application/pdf", f"{stem}.pdf")
     if kind not in kinds:
-        raise HTTPException(400, f"kind must be one of srt/vtt/txt/docx, got {kind}")
+        raise HTTPException(400, f"kind must be one of srt/vtt/txt/docx/pdf, got {kind}")
     ext, mt = kinds[kind]
     path = Path(settings.media_root) / Path(v["storage_path"]).parent / (stem + ext)
     return _stream_file(path, mt, f"{stem}{ext}")

@@ -6,7 +6,9 @@ export type VideoRow = {
   progress?: number;
   error?: string | null;
   size_bytes?: number | null;
+  duration_s?: number | null;
   language?: string | null;
+  has_thumb?: boolean;
   created_at: string;
 };
 
