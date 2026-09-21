@@ -33,6 +33,8 @@ export default function VideoPage() {
   const [jobBusy, setJobBusy] = useState(false);
   const [showShare, setShowShare] = useState(false);
   const [showRename, setShowRename] = useState(false);
+  const [genericSpeakers, setGenericSpeakers] = useState(false);
+  const [humanToGeneric, setHumanToGeneric] = useState<Record<string, string>>({});
   const [menuOpen, setMenuOpen] = useState(false);
   const [deleting, setDeleting] = useState(false);
   const [toast, setToast] = useState<string | null>(null);
@@ -50,7 +52,14 @@ export default function VideoPage() {
     setData(null); setError(""); setActiveSeg(null); setMediaSrc(null); setPosterSrc(null);
     api(`/videos/${videoId}/transcript`)
       .then((r) => r.json())
-      .then(setData)
+      .then((d) => {
+        setData(d);
+        // build human->generic map from speaker_order (rank order = Speaker N)
+        const order: string[] = d.speaker_order ?? [];
+        const m: Record<string, string> = {};
+        order.forEach((name: string, i: number) => { m[name] = `Speaker ${i + 1}`; });
+        setHumanToGeneric(m);
+      })
       .catch((e) => setError(e.message));
     // <audio>/<video> elements cannot send Authorization headers -> signed query token
     api(`/videos/${videoId}/media-token`)
@@ -269,17 +278,19 @@ export default function VideoPage() {
     setTimeout(() => setCopied(false), 2000);
   };
 
-  const dl = (kind: string) => {
+  const dl = (kind: string, spk?: "real" | "generic") => {
+    const qs = kind !== "video" && spk === "generic" ? "?spk=generic" : "";
     const url = kind === "video"
       ? `/videos/${videoId}/download`
-      : `/videos/${videoId}/artifacts/${kind}`;
+      : `/videos/${videoId}/artifacts/${kind}${qs}`;
     return api(url)
       .then((r) => r.blob())
       .then((b) => {
         const base = (data?.video.filename || "transcript").replace(/\.[^.]+$/, "");
+        const sfx = spk === "generic" ? "-generic" : "";
         const a = document.createElement("a");
         a.href = URL.createObjectURL(b);
-        a.download = kind === "video" ? (data?.video.filename || "video") : `${base}.${kind}`;
+        a.download = kind === "video" ? (data?.video.filename || "video") : `${base}${sfx}.${kind}`;
         a.click();
       });
   };
@@ -298,11 +309,25 @@ export default function VideoPage() {
   const stage = job?.stage ?? "";
   const isActiveJob = ["queued", "extracting", "transcribing", "writing", "diarizing", "cancel_requested"].includes(stage);
   const isDone = stage === "done" || (!isActiveJob && stage !== "failed" && stage !== "cancelled");
+  const isDiarized = Object.keys(humanToGeneric).length > 0;
 
   return (
     <div className="container wide">
       <Link to="/" className="muted">← all videos</Link>
       <h2 style={{ margin: "0.75rem 0 1rem" }}>{data.video.filename}</h2>
+
+      {/* SPEAKER LABEL TOGGLE (beta) - only on diarized videos */}
+      {Object.keys(humanToGeneric).length > 0 && (
+        <label className="spk-toggle" title="Beta: switch speaker labels between real names and generic numbering">
+          <input
+            type="checkbox"
+            checked={genericSpeakers}
+            onChange={(e) => setGenericSpeakers(e.target.checked)}
+          />
+          <span>generic names (Speaker 1/2/3)</span>
+          <span className="beta-tag">beta</span>
+        </label>
+      )}
 
       {/* JOB STRIP: only shown while a job runs or when it ended badly */}
       {(isActiveJob || stage === "failed" || stage === "cancelled") && (
@@ -378,6 +403,11 @@ export default function VideoPage() {
                       ↓ {k === "video" ? (isVideo ? "original video" : "original audio") : k.toUpperCase()}
                     </button>
                   ))}
+                  {isDiarized && ["srt", "docx", "pdf"].map((k) => (
+                    <button key={k + "-generic"} className="menu-item" onClick={() => dl(k, "generic")}>
+                      ↓ {k.toUpperCase()} · Speaker 1/2/3
+                    </button>
+                  ))}
                 </div>
               )}
             </div>
@@ -426,7 +456,11 @@ export default function VideoPage() {
                   }}
                 >
                   <span className="ts">{fmt(s.start_ms)}</span>
-                  {s.speaker && <span className="speaker">{s.speaker}</span>}
+                  {s.speaker && (
+                    <span className="speaker">
+                      {genericSpeakers && humanToGeneric[s.speaker] ? humanToGeneric[s.speaker] : s.speaker}
+                    </span>
+                  )}
                   {editingId === s.id ? (
                     <span className="editbox" onClick={(e) => e.stopPropagation()}>
                       <input

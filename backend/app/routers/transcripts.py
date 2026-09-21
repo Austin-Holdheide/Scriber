@@ -47,7 +47,7 @@ def _get_video(video_id: str, user_id: str):
 
 def _get_transcript(video_id: str):
     r = (admin_client().table("transcripts")
-         .select("id, full_text, srt_path, vtt_path, model")
+         .select("id, full_text, srt_path, vtt_path, model, speakers, speaker_order")
          .eq("video_id", video_id).limit(1).execute())
     if not r.data:
         raise HTTPException(404, "no transcript yet")
@@ -80,6 +80,7 @@ def transcript(video_id: str, user_id: str = Depends(get_current_user)):
         "video": {"id": v["id"], "filename": v["filename"]},
         "full_text": t["full_text"],
         "segments": all_rows,
+        "speaker_order": t.get("speaker_order") or [],
     })
 
 
@@ -97,10 +98,28 @@ def _stream_file(path: Path, media_type: str, filename: str):
 
 
 @router.get("/{video_id}/artifacts/{kind}")
-def artifact(video_id: str, kind: str, user_id: str = Depends(get_current_user)):
+def _apply_label_mode(segs: list, order: list, mode: str) -> list:
+    """spk=generic -> swap stored labels to 'Speaker N' by rank order (no DB writes)."""
+    if mode != "generic" or not order:
+        return segs
+    m = {name: f"Speaker {i + 1}" for i, name in enumerate(order)}
+    out = []
+    for s in segs:
+        s = dict(s)
+        if s.get("speaker") in m:
+            s["speaker"] = m[s["speaker"]]
+        out.append(s)
+    return out
+
+
+@router.get("/{video_id}/artifacts/{kind}")
+def artifact(video_id: str, kind: str, spk: str = "real", user_id: str = Depends(get_current_user)):
     v = _get_video(video_id, user_id)
     t = _get_transcript(video_id)
+    if spk not in ("real", "generic"):
+        raise HTTPException(422, "spk must be real|generic")
     stem = Path(v["storage_path"]).stem
+    suffix = "" if spk == "real" else "-generic"
     kinds = {
         "srt": (".srt", "application/x-subrip"),
         "vtt": (".vtt", "text/vtt"),
@@ -115,15 +134,15 @@ def artifact(video_id: str, kind: str, user_id: str = Depends(get_current_user))
         )
     if kind == "docx":
         from app.services.docx_export import export_docx
-        dest = Path(settings.media_root) / Path(v["storage_path"]).parent / (stem + ".docx")
+        dest = Path(settings.media_root) / Path(v["storage_path"]).parent / (stem + suffix + ".docx")
         if not dest.exists():
-            export_docx(v, t, _all_segments(t["id"]), dest)
-        return _stream_file(dest, "application/vnd.openxmlformats-officedocument.wordprocessingml.document", f"{stem}.docx")
+            export_docx(v, t, _apply_label_mode(_all_segments(t["id"]), t.get("speaker_order") or [], spk), dest)
+        return _stream_file(dest, "application/vnd.openxmlformats-officedocument.wordprocessingml.document", f"{stem}{suffix}.docx")
     if kind == "pdf":
-        dest = Path(settings.media_root) / Path(v["storage_path"]).parent / (stem + ".pdf")
+        dest = Path(settings.media_root) / Path(v["storage_path"]).parent / (stem + suffix + ".pdf")
         if not dest.exists():
-            export_pdf(v, t, _all_segments(t["id"]), dest)
-        return _stream_file(dest, "application/pdf", f"{stem}.pdf")
+            export_pdf(v, t, _apply_label_mode(_all_segments(t["id"]), t.get("speaker_order") or [], spk), dest)
+        return _stream_file(dest, "application/pdf", f"{stem}{suffix}.pdf")
     if kind not in kinds:
         raise HTTPException(400, f"kind must be one of srt/vtt/txt/docx/pdf, got {kind}")
     ext, mt = kinds[kind]

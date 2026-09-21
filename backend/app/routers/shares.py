@@ -106,12 +106,28 @@ MEDIA_TYPES = {
 }
 
 
+def _swap_generic(segs: list, order: list) -> list:
+    m = {name: f"Speaker {i + 1}" for i, name in enumerate(order or [])}
+    if not m:
+        return segs
+    out = []
+    for s in segs:
+        s = dict(s)
+        if s.get("speaker") in m:
+            s["speaker"] = m[s["speaker"]]
+        out.append(s)
+    return out
+
+
 @router.get("/public/{token}/artifact/{kind}")
-def public_share_artifact(token: str, kind: str):
-    """Public transcript artifacts for a valid share link (srt / docx / pdf)."""
+def public_share_artifact(token: str, kind: str, spk: str = "real"):
+    """Public transcript artifacts for a valid share link (srt / docx / pdf).
+    spk=generic swaps speaker labels to Speaker 1/2/3 by rank order."""
     from fastapi.responses import FileResponse, Response as _Response
     from app.config import settings as _settings
 
+    if spk not in ("real", "generic"):
+        raise HTTPException(422, "spk must be real|generic")
     s = _load_shared(token)
     if not s:
         raise HTTPException(404, "share link is invalid, expired, or revoked")
@@ -121,11 +137,13 @@ def public_share_artifact(token: str, kind: str):
     if not v.data:
         raise HTTPException(404, "not found")
     t = (admin_client().table("transcripts")
-         .select("id, full_text, model").eq("video_id", vid).limit(1).execute())
+         .select("id, full_text, model, speaker_order").eq("video_id", vid).limit(1).execute())
     if not t.data:
         raise HTTPException(404, "no transcript yet")
 
+    order = t.data[0].get("speaker_order") or []
     stem = Path(v.data[0]["storage_path"]).stem
+    suffix = "" if spk == "real" else "-generic"
     fname = v.data[0]["filename"]
     ascii_base = fname.encode("ascii", "replace").decode().replace('"', "")
     base_noext = ascii_base.rsplit(".", 1)[0] or "transcript"
@@ -144,7 +162,7 @@ def public_share_artifact(token: str, kind: str):
         return FileResponse(path, media_type="application/x-subrip",
                             headers={"Content-Disposition": f'attachment; filename="{base_noext}.srt"'})
     if kind == "docx":
-        path = Path(_settings.media_root) / Path(v.data[0]["storage_path"]).parent / (stem + ".docx")
+        path = Path(_settings.media_root) / Path(v.data[0]["storage_path"]).parent / (stem + suffix + ".docx")
         if not path.exists():
             from app.services.docx_export import export_docx
             # paged segments (cap defense)
@@ -157,11 +175,11 @@ def public_share_artifact(token: str, kind: str):
                 if len(r.data) < page:
                     break
                 offset += page
-            export_docx(v.data[0], t.data[0], segs, path)
+            export_docx(v.data[0], t.data[0], _swap_generic(segs, order), path)
         return FileResponse(path, media_type="application/vnd.openxmlformats-officedocument.wordprocessingml.document",
-                            headers={"Content-Disposition": f'attachment; filename="{base_noext}.docx"'})
+                            headers={"Content-Disposition": f'attachment; filename="{base_noext}{suffix}.docx"'})
     if kind == "pdf":
-        path = Path(_settings.media_root) / Path(v.data[0]["storage_path"]).parent / (stem + ".pdf")
+        path = Path(_settings.media_root) / Path(v.data[0]["storage_path"]).parent / (stem + suffix + ".pdf")
         if not path.exists():
             from app.services.pdf_export import export_pdf
             segs, offset, page = [], 0, 1000
@@ -173,9 +191,9 @@ def public_share_artifact(token: str, kind: str):
                 if len(r.data) < page:
                     break
                 offset += page
-            export_pdf(v.data[0], t.data[0], segs, path)
+            export_pdf(v.data[0], t.data[0], _swap_generic(segs, order), path)
         return FileResponse(path, media_type="application/pdf",
-                            headers={"Content-Disposition": f'attachment; filename="{base_noext}.pdf"'})
+                            headers={"Content-Disposition": f'attachment; filename="{base_noext}{suffix}.pdf"'})
     raise HTTPException(400, "kind must be one of srt/docx/pdf/txt")
 
 

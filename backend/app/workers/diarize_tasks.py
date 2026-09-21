@@ -167,9 +167,11 @@ def diarize_job(job_row_id: str, video_id: str, storage_path: str):
             pct = 75 + int(15 * (i + len(chunk)) / max(len(updates), 1))
             _set_job(job_row_id, "diarizing", min(pct, 90))
 
-        # 6) record speaker map on the transcript row (rename UI reads this)
+        # 6) record speaker map + rank order on the transcript row (rename UI + toggle read this)
+        rank_order = [label_map[spk] for spk in order]
         admin_client().table("transcripts").update({
             "speakers": label_map,
+            "speaker_order": rank_order,
         }).eq("id", transcript_id).execute()
 
         admin_client().table("videos").update({"status": "done"}).eq("id", video_id).execute()

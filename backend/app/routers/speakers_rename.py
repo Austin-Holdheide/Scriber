@@ -71,6 +71,12 @@ def rename_speakers(video_id: str, body: RenameBody, user_id: str = Depends(get_
     for old_label, new_label in clean.items():
         if old_label not in stored_out.values():
             stored_out[old_label] = new_label
-    admin_client().table("transcripts").update({"speakers": stored_out}).eq("id", transcript_id).execute()
+    # keep rank order in sync with renames
+    order = t.data[0].get("speaker_order") or []
+    order_out = [clean.get(h, h) for h in order]
+    admin_client().table("transcripts").update({
+        "speakers": stored_out,
+        "speaker_order": order_out,
+    }).eq("id", transcript_id).execute()
 
     return {"renamed": total, "mapping": clean}

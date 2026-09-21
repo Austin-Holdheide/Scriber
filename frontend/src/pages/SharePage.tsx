@@ -25,6 +25,7 @@ export default function SharePage() {
   const [hasThumb, setHasThumb] = useState(false);
   const [activeSeg, setActiveSeg] = useState<number | null>(null);
   const [matchesJustCleared, setMatchesJustCleared] = useState<number | null>(null);
+  const isDiarized = ((data as any)?.speaker_order ?? []).length > 0;
 
   const mediaRef = useRef<HTMLVideoElement | HTMLAudioElement | null>(null);
   const segEls = useRef<Map<number, HTMLDivElement>>(new Map());
@@ -85,13 +86,14 @@ export default function SharePage() {
     return () => cancelAnimationFrame(raf);
   }, [data]);
 
-  const dl = (kind: string) => {
+  const dl = (kind: string, spk?: "real" | "generic") => {
+    const qs = kind !== "video" && spk === "generic" ? "?spk=generic" : "";
     const url = kind === "video"
       ? `/api/videos/public/${encodeURIComponent(token)}/media`
-      : `/api/videos/public/${encodeURIComponent(token)}/artifact/${kind}`;
+      : `/api/videos/public/${encodeURIComponent(token)}/artifact/${kind}${qs}`;
     const a = document.createElement("a");
     a.href = url;
-    a.download = kind === "video" ? (data?.video.filename || "media") : `${(data?.video.filename || "transcript").replace(/\.[^.]+$/, "")}.${kind}`;
+    a.download = kind === "video" ? (data?.video.filename || "media") : `${(data?.video.filename || "transcript").replace(/\.[^.]+$/, "")}${spk === "generic" ? "-generic" : ""}.${kind}`;
     a.click();
   };
 
@@ -163,6 +165,11 @@ export default function SharePage() {
             {["srt", "docx", "pdf", "video"].map((k) => (
               <button key={k} className="ghost sm" onClick={() => dl(k)}>
                 ↓ {k === "video" ? (isVideo ? "original video" : "original audio") : k.toUpperCase()}
+              </button>
+            ))}
+            {isDiarized && ["srt", "docx", "pdf"].map((k) => (
+              <button key={k + "-generic"} className="ghost sm" onClick={() => dl(k, "generic")}>
+                ↓ {k.toUpperCase()} · Speaker 1/2/3
               </button>
             ))}
           </div>
