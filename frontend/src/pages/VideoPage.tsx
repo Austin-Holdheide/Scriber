@@ -2,6 +2,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Link, useNavigate, useParams, useSearchParams } from "react-router-dom";
 import { api, supabase } from "../lib/supabase";
 import ShareModal from "../components/ShareModal";
+import SpeakerRename from "../components/SpeakerRename";
 import { copyText } from "../lib/clipboard";
 import type { Segment, TranscriptData } from "../lib/types";
 
@@ -31,10 +32,11 @@ export default function VideoPage() {
   const [job, setJob] = useState<{ stage: string; progress: number; error?: string | null } | null>(null);
   const [jobBusy, setJobBusy] = useState(false);
   const [showShare, setShowShare] = useState(false);
+  const [showRename, setShowRename] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
   const [deleting, setDeleting] = useState(false);
   const [toast, setToast] = useState<string | null>(null);
-  const [confirmWhat, setConfirmWhat] = useState<"delete" | "retranscribe" | null>(null);
+  const [confirmWhat, setConfirmWhat] = useState<"delete" | "retranscribe" | "diarize" | null>(null);
   const [copied, setCopied] = useState(false);
   const [matchesJustCleared, setMatchesJustCleared] = useState<number | null>(null);
   const navigate = useNavigate();
@@ -211,7 +213,7 @@ export default function VideoPage() {
   }, [data, matches, seekTo]);
 
   // ---- job actions: cancel / retry / re-do ----
-  const jobAction = async (kind: "cancel" | "retranscribe") => {
+  const jobAction = async (kind: "cancel" | "retranscribe" | "diarize") => {
     setJobBusy(true);
     setError("");
     try {
@@ -294,7 +296,8 @@ export default function VideoPage() {
 
   const vttSrc = `/api/videos/${videoId}/artifacts/vtt`;
   const stage = job?.stage ?? "";
-  const isActiveJob = ["queued", "extracting", "transcribing", "writing", "cancel_requested"].includes(stage);
+  const isActiveJob = ["queued", "extracting", "transcribing", "writing", "diarizing", "cancel_requested"].includes(stage);
+  const isDone = stage === "done" || (!isActiveJob && stage !== "failed" && stage !== "cancelled");
 
   return (
     <div className="container wide">
@@ -344,6 +347,20 @@ export default function VideoPage() {
                 title="More actions">☰</button>
               {menuOpen && (
                 <div className="menu-pop" onClick={() => setMenuOpen(false)}>
+                  {isDone && (
+                    <button className="menu-item" disabled={jobBusy}
+                      onClick={() => { setMenuOpen(false); setShowRename(true); }}
+                      title="Give speakers real names">
+                      ✏️ Rename speakers
+                    </button>
+                  )}
+                  {isDone && (
+                    <button className="menu-item" disabled={jobBusy}
+                      onClick={() => setConfirmWhat("diarize")}
+                      title="Detect speakers and label every segment (runs on GPU - may take a while)">
+                      🗣 Detect speakers
+                    </button>
+                  )}
                   {!isActiveJob && (
                     <button className="menu-item" disabled={jobBusy}
                       onClick={() => setConfirmWhat("retranscribe")}
@@ -446,7 +463,25 @@ export default function VideoPage() {
       {confirmWhat && (
         <div className="modal-backdrop" onClick={() => !deleting && !jobBusy && setConfirmWhat(null)}>
           <div className="modal" onClick={(e) => e.stopPropagation()}>
-            {confirmWhat === "delete" ? (
+            {confirmWhat === "diarize" ? (
+              <>
+                <h3>Detect speakers?</h3>
+                <p style={{ fontWeight: 600, margin: "0.5rem 0" }}>{data.video.filename}</p>
+                <p className="muted">
+                  Runs speaker detection on the existing transcript and labels every segment
+                  (SPEAKER_1, SPEAKER_2, …). Your video is <b>{Math.round((data.segments[data.segments.length-1]?.end_ms ?? 0) / 60000)} minutes</b> long —
+                  this runs on the GPU and <b>can take a while</b> (roughly a quarter of the video's
+                  length, so ~{Math.max(1, Math.round((data.segments[data.segments.length-1]?.end_ms ?? 0) / 60000 / 4))} min for this video).
+                  You can keep using Scribly; you'll get a notification when it's done.
+                </p>
+                <div style={{ display: "flex", gap: "0.5rem", justifyContent: "flex-end", marginTop: "1rem" }}>
+                  <button className="ghost" disabled={jobBusy} onClick={() => setConfirmWhat(null)}>cancel</button>
+                  <button disabled={jobBusy} onClick={async () => { setConfirmWhat(null); await jobAction("diarize"); }}>
+                    {jobBusy ? "queueing…" : "detect speakers"}
+                  </button>
+                </div>
+              </>
+            ) : confirmWhat === "delete" ? (
               <>
                 <h3>Delete video?</h3>
                 <p style={{ fontWeight: 600, margin: "0.5rem 0" }}>{data.video.filename}</p>
@@ -482,6 +517,9 @@ export default function VideoPage() {
 
       {showShare && (
         <ShareModal videoId={videoId} filename={data.video.filename} onClose={() => setShowShare(false)} />
+      )}
+      {showRename && (
+        <SpeakerRename videoId={videoId} onClose={() => setShowRename(false)} />
       )}
     </div>
   );

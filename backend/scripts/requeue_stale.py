@@ -48,7 +48,11 @@ def main():
             continue
         print(f"stale job {jid} (stage={job['stage']}, updated={job['updated_at']}) -> requeue")
         try:
-            enqueue_transcription(job_id=jid, video_id=vid, storage_path=sp)
+            if job["stage"] == "diarizing":
+                from app.services.queue import enqueue_diarization
+                enqueue_diarization(job_id=jid, video_id=vid, storage_path=sp)
+            else:
+                enqueue_transcription(job_id=jid, video_id=vid, storage_path=sp)
             requeued += 1
         except Exception as e:
             print(f"  enqueue failed: {e}")

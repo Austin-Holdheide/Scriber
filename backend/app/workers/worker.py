@@ -15,11 +15,12 @@ logging.basicConfig(level=logging.INFO, format="%(asctime)s %(name)s %(levelname
 
 redis = Redis(host=wsettings.redis_host, port=wsettings.redis_port, db=0)
 
-# GPU workers listen on their own priority queue FIRST, plus the shared fallback queue.
-# CPU workers only listen on the fallback. Prevents CPU workers from stealing jobs
-# that should run on a P4 (user-visible as "why is my transcript small/cpu?").
+# GPU workers listen on their own priority queue FIRST, plus the shared fallback queue,
+# plus the diarize queue. CPU workers only listen on the fallback (no diarization).
 if wsettings.device == "cuda":
-    queues = [Queue("transcribe-gpu", connection=redis), Queue(wsettings.queue_name, connection=redis)]
+    queues = [Queue("transcribe-gpu", connection=redis),
+              Queue("diarize-gpu", connection=redis),
+              Queue(wsettings.queue_name, connection=redis)]
 else:
     queues = [Queue(wsettings.queue_name, connection=redis)]
 
