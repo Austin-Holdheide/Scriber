@@ -164,12 +164,12 @@ export default function SharePage() {
             <span className="muted">downloads:</span>
             {["srt", "docx", "pdf", "video"].map((k) => (
               <button key={k} className="ghost sm" onClick={() => dl(k)}>
-                ↓ {k === "video" ? (isVideo ? "original video" : "original audio") : k.toUpperCase()}
+                {k === "video" ? (isVideo ? "original audio/video" : "original audio") : k}
               </button>
             ))}
             {isDiarized && ["srt", "docx", "pdf"].map((k) => (
               <button key={k + "-generic"} className="ghost sm" onClick={() => dl(k, "generic")}>
-                ↓ {k.toUpperCase()} · Speaker 1/2/3
+                {k} · Speaker 1/2/3
               </button>
             ))}
           </div>

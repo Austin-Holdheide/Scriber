@@ -33,7 +33,7 @@ export default function VideoPage() {
   const [jobBusy, setJobBusy] = useState(false);
   const [showShare, setShowShare] = useState(false);
   const [showRename, setShowRename] = useState(false);
-  const [genericSpeakers, setGenericSpeakers] = useState(false);
+  const [genericSpeakers, setGenericSpeakers] = useState(true);
   const [humanToGeneric, setHumanToGeneric] = useState<Record<string, string>>({});
   const [menuOpen, setMenuOpen] = useState(false);
   const [deleting, setDeleting] = useState(false);
@@ -366,46 +366,46 @@ export default function VideoPage() {
           )}
           <div className="video-page-actions">
             <button className="share-big" onClick={() => setShowShare(true)}
-              title="Create a read-only share link">🔗 Share</button>
+              title="Create a read-only share link">Share</button>
             <div className="menu-wrap">
               <button className="ghost sharebig-ghost" onClick={() => setMenuOpen(!menuOpen)}
-                title="More actions">☰</button>
+                title="More actions">⋯</button>
               {menuOpen && (
                 <div className="menu-pop" onClick={() => setMenuOpen(false)}>
                   {isDone && (
                     <button className="menu-item" disabled={jobBusy}
                       onClick={() => { setMenuOpen(false); setShowRename(true); }}
                       title="Give speakers real names">
-                      ✏️ Rename speakers
+                      Rename speakers
                     </button>
                   )}
                   {isDone && (
                     <button className="menu-item" disabled={jobBusy}
                       onClick={() => setConfirmWhat("diarize")}
                       title="Detect speakers and label every segment (runs on GPU - may take a while)">
-                      🗣 Detect speakers
+                      Detect speakers
                     </button>
                   )}
                   {!isActiveJob && (
                     <button className="menu-item" disabled={jobBusy}
                       onClick={() => setConfirmWhat("retranscribe")}
                       title="Re-run transcription with the current pipeline (replaces this transcript)">
-                      {stage === "failed" || stage === "cancelled" ? "↻ Retry transcription" : "↻ Re-transcribe"}
+                      {stage === "failed" || stage === "cancelled" ? "Retry transcription" : "Re-transcribe"}
                     </button>
                   )}
                   <div className="menu-sep">danger zone</div>
                   <button className="menu-item danger" disabled={deleting} onClick={() => setConfirmWhat("delete")}>
-                    🗑 Delete video
+                    Delete video
                   </button>
                   <div className="menu-sep">download</div>
                   {["srt", "docx", "pdf", "video"].map((k) => (
                     <button key={k} className="menu-item" onClick={() => dl(k)}>
-                      ↓ {k === "video" ? (isVideo ? "original video" : "original audio") : k.toUpperCase()}
+                      {k === "video" ? (isVideo ? "original audio/video" : "original audio") : k}
                     </button>
                   ))}
                   {isDiarized && ["srt", "docx", "pdf"].map((k) => (
                     <button key={k + "-generic"} className="menu-item" onClick={() => dl(k, "generic")}>
-                      ↓ {k.toUpperCase()} · Speaker 1/2/3
+                      {k} · Speaker 1/2/3
                     </button>
                   ))}
                 </div>
@@ -427,7 +427,7 @@ export default function VideoPage() {
               autoFocus
             />
             {query && (
-              <button className="ghost" onClick={jumpNext} title="jump to next match">↓</button>
+              <button className="ghost" onClick={jumpNext} title="jump to next match">next</button>
             )}
             <button className="ghost" onClick={copyAll}
               title={matches ? "Copy the search results" : "Copy all segments"}>

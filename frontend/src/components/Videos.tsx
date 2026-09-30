@@ -152,7 +152,7 @@ export default function Videos() {
             <img className="thumb" src={thumbTokens[v.id]} alt="" loading="lazy"
                  onError={(e) => { (e.target as HTMLImageElement).style.visibility = "hidden"; }} />
           ) : (
-            <div className="thumb thumb-placeholder">▶</div>
+            <div className="thumb thumb-placeholder">audio</div>
           )}
           <div style={{ minWidth: 0, flex: 1 }}>
             <div style={{ fontWeight: 600, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
