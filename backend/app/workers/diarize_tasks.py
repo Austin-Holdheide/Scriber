@@ -66,6 +66,16 @@ def diarize_job(job_row_id: str, video_id: str, storage_path: str):
 
         _set_job(job_row_id, "diarizing", 15)
 
+        # sweep stale diarize temp dirs from crashed/restarted workers (older than 2h)
+        try:
+            import glob, time as _t, shutil as _sh
+            now = _t.time()
+            for d in glob.glob("/tmp/scriber-diar-*"):
+                if now - _t.path.getmtime(d) > 7200:
+                    _sh.rmtree(d, ignore_errors=True)
+        except Exception:
+            pass
+
         # 1) existing segments from the DB (paged - 1000-row cap defense)
         t = (admin_client().table("transcripts")
              .select("id").eq("video_id", video_id)
@@ -96,19 +106,47 @@ def diarize_job(job_row_id: str, video_id: str, storage_path: str):
             check=True, capture_output=True,
         )
 
-        # 3) run the pipeline on GPU
+        # 3) run the pipeline on GPU - CHUNKED (10-min pieces) so a 4h file never
+        #    sits in one giant pipeline call (the un-chunked call hung for 6h and
+        #    died on the RQ timeout). Each chunk is the proven fast regime (~1min).
         _set_job(job_row_id, "diarizing", 30)
         _check_cancel(job_row_id)
         pipeline = get_pipeline()
+
+        CHUNK = 600  # seconds per chunk
+        # probe total duration via ffprobe
+        dur_r = subprocess.run(
+            ["ffprobe", "-v", "error", "-show_entries", "format=duration",
+             "-of", "default=noprint_wrappers=1:nokey=1", str(wav)],
+            check=True, capture_output=True, text=True)
+        total_s = float(dur_r.stdout.strip())
+        n_chunks = max(1, -(-int(total_s) // CHUNK))
+        log.info("diarizing %.0fs audio in %d chunks of %ds", total_s, n_chunks, CHUNK)
+
+        turns = []  # (start_ms, end_ms, speaker) global
         t0 = time.time()
-        annotation = pipeline(str(wav))
+        import glob as _glob
+        for ci in range(n_chunks):
+            _check_cancel(job_row_id)
+            cs, ce = ci * CHUNK, min((ci + 1) * CHUNK, total_s)
+            chunk_path = tmp / f"chunk_{ci:04d}.wav"
+            subprocess.run(
+                ["ffmpeg", "-y", "-ss", str(cs), "-t", str(ce - cs), "-i", str(wav),
+                 "-ac", "1", "-ar", "16000", str(chunk_path)],
+                check=True, capture_output=True)
+            annotation = pipeline(str(chunk_path))
+            for turn, _, spk in annotation.itertracks(yield_label=True):
+                st = cs * 1000 + turn.start * 1000
+                en = cs * 1000 + turn.end * 1000
+                turns.append((int(st), int(en), spk))
+            chunk_path.unlink(missing_ok=True)
+            pct = 30 + int(45 * (ci + 1) / n_chunks)
+            _set_job(job_row_id, "diarizing", min(pct, 74))
         took = time.time() - t0
-        log.info("diarization done in %.0fs", took)
+        log.info("diarization done: %d turns in %.0fs (%.2f RTF)", len(turns), took, took / total_s)
 
         # 4) map segment midpoints -> speaker turns
         _set_job(job_row_id, "diarizing", 75)
-        turns = [(turn.start * 1000, turn.end * 1000, spk)
-                 for turn, _, spk in annotation.itertracks(yield_label=True)]
         turns.sort()
         from collections import defaultdict as _dd
         _dur = _dd(float)
@@ -209,4 +247,5 @@ def diarize_job(job_row_id: str, video_id: str, storage_path: str):
             pass
     finally:
         if tmp is not None:
-            subprocess.run(["rm", "-rf", tmp.as_posix()])
+            import shutil as _sh
+            _sh.rmtree(tmp, ignore_errors=True)

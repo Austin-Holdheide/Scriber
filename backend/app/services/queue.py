@@ -62,5 +62,5 @@ def enqueue_diarization(job_id: str, video_id: str, storage_path: str):
         "app.workers.diarize_tasks.diarize_job",
         job_row_id=job_id, video_id=video_id, storage_path=storage_path,
         job_id=f"diarize-{job_id}",
-        job_timeout=3600 * 6, result_ttl=3600, failure_ttl=3600,
+        job_timeout=3600 * 24, result_ttl=3600, failure_ttl=3600,
     )
