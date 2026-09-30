@@ -20,7 +20,7 @@ export default function Auth() {
   };
 
   return (
-    <form onSubmit={submit} style={{ maxWidth: 360, margin: "4rem auto" }}>
+    <form onSubmit={submit} style={{ maxWidth: 360, margin: "4rem auto", padding: "0 1rem" }}>
       <h2 style={{ marginTop: 0 }}>{mode === "login" ? "Sign in" : "Create account"}</h2>
       <input
         type="email" placeholder="email" value={email} required

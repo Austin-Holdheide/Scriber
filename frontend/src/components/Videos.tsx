@@ -127,7 +127,7 @@ export default function Videos() {
   };
 
   return (
-    <>
+    <div className="container">
       <div
         className={`drop ${drag ? "hot" : ""}`}
         onClick={() => fileRef.current?.click()}
@@ -187,6 +187,6 @@ export default function Videos() {
           </div>
         </div>
       )}
-    </>
+    </div>
   );
 }

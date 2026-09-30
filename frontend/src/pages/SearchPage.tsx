@@ -51,7 +51,7 @@ export default function SearchPage() {
   useEffect(() => () => window.clearTimeout(timer.current), []);
 
   return (
-    <div style={{ maxWidth: 820, margin: "0 auto" }}>
+    <div className="container" style={{ maxWidth: 820 }}>
       <h2>Search transcripts</h2>
       <div className="searchbar" style={{ marginBottom: "1rem" }}>
         <input

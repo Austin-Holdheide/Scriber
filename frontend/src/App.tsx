@@ -22,14 +22,18 @@ export default function App() {
   if (session === null) return <div className="container muted">loading…</div>;
 
   return (
-    <div className="container">
-      <header>
+    <div className="app-shell">
+      <header className="topbar">
+        <div className="topbar-inner">
           <h1><Link to="/" style={{ color: "inherit", textDecoration: "none" }}>✦ Scribly</Link></h1>
           {session && <GlobalSearchInput />}
           {session && <button className="ghost" onClick={() => supabase.auth.signOut()}>sign out</button>}
-        </header>
+        </div>
+      </header>
       {searching && session ? (
-        <SearchResultsBody />
+        <div className="container">
+          <SearchResultsBody />
+        </div>
       ) : (
         <RR_Routes>
           <Route path="/share/:token" element={<SharePage />} />
