@@ -76,14 +76,21 @@ export default function GlobalSearchProvider({ children }: { children: React.Rea
 export function GlobalSearchInput() {
   const { q, setQ } = useGlobalSearch();
   return (
-    <input
-      className="gsearch-input"
-      placeholder="🔍  search transcripts…"
-      value={q}
-      onChange={(e) => setQ(e.target.value)}
-      onKeyDown={(e) => { if (e.key === "Escape") setQ(""); }}
-      style={{ maxWidth: 340, width: "100%" }}
-    />
+    <div className="gsearch-wrap">
+      <svg className="gsearch-icon" width="14" height="14" viewBox="0 0 24 24" fill="none"
+           stroke="currentColor" strokeWidth="2" strokeLinecap="round" aria-hidden="true">
+        <circle cx="11" cy="11" r="7" />
+        <line x1="16.5" y1="16.5" x2="21" y2="21" />
+      </svg>
+      <input
+        className="gsearch-input"
+        placeholder="search transcripts…"
+        value={q}
+        onChange={(e) => setQ(e.target.value)}
+        onKeyDown={(e) => { if (e.key === "Escape") setQ(""); }}
+        style={{ maxWidth: 340, width: "100%" }}
+      />
+    </div>
   );
 }
 
