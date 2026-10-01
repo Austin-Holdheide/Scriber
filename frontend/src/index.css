@@ -277,12 +277,9 @@ button.ghost.sm { padding: 0.3rem 0.65rem; font-size: 0.8rem; }
 }
 .topbar-inner {
   width: 100%; max-width: 1400px; margin: 0 auto;
-  display: grid; grid-template-columns: 1fr auto 1fr; align-items: center;
-  gap: 1rem; padding: 0.85rem 1rem;
+  display: flex; justify-content: space-between; align-items: center;
+  gap: 1rem; padding: 0.65rem 1rem;
 }
-/* centered logo: logo is DOM-first; place it in the middle column */
-.topbar-inner h1 { grid-column: 2; justify-self: center; }
-.topbar-inner .gsearch-wrap { grid-column: 1; justify-self: start; }
-.topbar-inner button.ghost { grid-column: 3; justify-self: end; }
+.topbar-inner h1 { line-height: 1; }
 /* old header margin-bottom removed - pages own their spacing */
 header.topbar h1 { font-size: 1.4rem; margin: 0; letter-spacing: 0.5px; }
