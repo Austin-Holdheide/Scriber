@@ -97,7 +97,6 @@ def _stream_file(path: Path, media_type: str, filename: str):
     )
 
 
-@router.get("/{video_id}/artifacts/{kind}")
 def _apply_label_mode(segs: list, order: list, mode: str) -> list:
     """spk=generic -> swap stored labels to 'Speaker N' by rank order (no DB writes)."""
     if mode != "generic" or not order:
