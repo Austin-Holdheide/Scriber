@@ -35,6 +35,22 @@ def get_pipeline():
     return _pipeline
 
 
+_embedder = None
+
+
+def get_embedder():
+    """Speaker-embedding model (wespeaker, already cached by the pipeline) for
+    the global re-clustering stage (F-12)."""
+    global _embedder
+    if _embedder is None:
+        from pyannote.audio import Model
+        m = Model.from_pretrained("pyannote/wespeaker-voxceleb-resnet34-LM")
+        m.eval().to(torch.device("cuda"))
+        _embedder = m
+        log.info("speaker embedding model loaded (wespeaker) on %s", torch.device("cuda"))
+    return _embedder
+
+
 def _set_job(job_id: str, stage: str, progress: int, error: str | None = None):
     admin_client().table("jobs").update(
         {"stage": stage, "progress": progress, "error": error, "updated_at": "now()"}
@@ -124,6 +140,12 @@ def diarize_job(job_row_id: str, video_id: str, storage_path: str):
         log.info("diarizing %.0fs audio in %d chunks of %ds", total_s, n_chunks, CHUNK)
 
         turns = []  # (start_ms, end_ms, speaker) global
+        embs = []   # parallel: embedding per turn (None = too short, skipped)
+        embedder = None
+        try:
+            embedder = get_embedder()
+        except Exception:
+            log.exception("embedding model unavailable - global re-cluster disabled")
         t0 = time.time()
         import glob as _glob
         for ci in range(n_chunks):
@@ -135,15 +157,86 @@ def diarize_job(job_row_id: str, video_id: str, storage_path: str):
                  "-ac", "1", "-ar", "16000", str(chunk_path)],
                 check=True, capture_output=True)
             annotation = pipeline(str(chunk_path))
+            cw = None
+            if embedder is not None:
+                import torchaudio
+                cw, sr = torchaudio.load(str(chunk_path))
+                if cw.shape[0] > 1:
+                    cw = cw.mean(0, keepdim=True)
+                cw = cw.cuda()
             for turn, _, spk in annotation.itertracks(yield_label=True):
                 st = cs * 1000 + turn.start * 1000
                 en = cs * 1000 + turn.end * 1000
+                emb = None
+                if embedder is not None and (turn.end - turn.start) >= 0.3:
+                    a, b = int(turn.start * 16000), int(turn.end * 16000)
+                    if b > a:
+                        with torch.inference_mode():
+                            out = embedder(cw[:, a:b].unsqueeze(0))
+                        emb = out[0].detach().float().cpu().numpy()
+                embs.append(emb)
                 turns.append((int(st), int(en), spk))
             chunk_path.unlink(missing_ok=True)
             pct = 30 + int(45 * (ci + 1) / n_chunks)
             _set_job(job_row_id, "diarizing", min(pct, 74))
         took = time.time() - t0
         log.info("diarization done: %d turns in %.0fs (%.2f RTF)", len(turns), took, took / total_s)
+
+        # 3b) GLOBAL speaker reconciliation (F-12): cluster all turn embeddings
+        #     across ALL chunks so a label means the same person for the whole
+        #     file, then remap chunk-local speakers by duration-weighted majority.
+        try:
+            import numpy as np
+            from collections import defaultdict as _dd2
+            from sklearn.cluster import AgglomerativeClustering
+            idx = [i for i, e in enumerate(embs) if e is not None]
+            if len(idx) >= 10:
+                X = np.stack([embs[i] for i in idx]).astype("float32")
+                nrm = np.linalg.norm(X, axis=1, keepdims=True)
+                nrm[nrm == 0] = 1.0
+                X /= nrm
+                cl = AgglomerativeClustering(metric="cosine", linkage="average",
+                                             distance_threshold=0.715, n_clusters=None)
+                gl = cl.fit_predict(X)
+                # duration per global cluster; large clusters (>=5% speech) survive,
+                # micro-clusters fold into their NEAREST large cluster by centroid
+                # cosine (never "everything into the biggest one" - that erased the
+                # second host on the first smoke run)
+                _gdur = _dd2(float)
+                for j, ti in enumerate(idx):
+                    _st, _en, _spk = turns[ti]
+                    _gdur[int(gl[j])] += (_en - _st)
+                total_emb = sum(_gdur.values())
+                large = {g for g, d in _gdur.items() if d >= total_emb * 0.05}
+                gmap = {}
+                if large:
+                    cents = {}
+                    for g in _gdur:
+                        rows = X[[j for j, ti in enumerate(idx) if int(gl[j]) == g]]
+                        c = rows.mean(axis=0)
+                        nc = float(np.linalg.norm(c)) or 1.0
+                        cents[g] = c / nc
+                    for g in _gdur:
+                        if g in large:
+                            gmap[g] = g
+                        else:
+                            gmap[g] = max(large, key=lambda L: float(np.dot(cents[g], cents[L])))
+                else:
+                    top = max(_gdur, key=_gdur.get)
+                    gmap = {g: top for g in _gdur}
+                gl2 = [gmap[int(g)] for g in gl]
+                votes = _dd2(lambda: _dd2(float))
+                for j, ti in enumerate(idx):
+                    _st, _en, _spk = turns[ti]
+                    votes[_spk][int(gl2[j])] += (_en - _st)
+                spk_map = {spk: "g%d" % max(v, key=v.get) for spk, v in votes.items()}
+                turns = [(st, en, spk_map.get(spk, spk)) for st, en, spk in turns]
+                log.info("global re-cluster: %d embedded turns, %d raw clusters -> %d final speakers",
+                         len(idx), len(set(gl.tolist())), len(set(gl2)))
+            else:
+                log.info("global re-cluster skipped: only %d embeddings", len(idx))
+        except Exception:
+            log.exception("global re-cluster failed - keeping chunk-local labels")
 
         # 4) map segment midpoints -> speaker turns
         _set_job(job_row_id, "diarizing", 75)
