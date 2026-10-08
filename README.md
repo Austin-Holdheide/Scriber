@@ -2,7 +2,9 @@
 
 **Scribly** (formerly Scriber) — self-hosted video transcription web app. Live at **https://scribly.cc** (LAN: http://192.168.1.202). Upload a video/audio file → faster-whisper ASR on 2× Tesla P4 (Proxmox LXCs) → searchable, editable, exportable, shareable transcripts.
 
-**Status: v0.7.0 — W1–W12 complete.** Full web app live with global hybrid search, expiring share links, PDF export, push notifications, and thumbnails — validated on real-world files up to 3h42m (416MB). Remaining: diarization (W10), hardening (W13), v1.0.0.
+**Status: v0.7.x — W1–W12 + W10 complete.** Full web app live with global hybrid search, expiring share links, PDF export, push notifications, thumbnails, and **speaker diarization** (chunked + globally re-clustered) — validated on real-world files up to 3h42m (416MB). Remaining: hardening (W13), tiers/monetization, v1.0.0 (see `docs/roadmap.md`).
+
+Public POC: **https://pocscribly.holdheide.com** (frontend) with Supabase's API gateway exposed separately at **https://db.scribly.cc** (API prefixes only — the studio/dashboard is firewall-blocked at the proxy).
 
 ## Features
 
@@ -13,6 +15,12 @@
 - **Global search**: hybrid matching — full-text FTS + word-prefix + substring — so `search` finds *research*/*unsearchable* and `transcri` finds *transcription*; ranked results with highlighted snippets, click → jumps into the player
 - **Robust pipeline**: 10-minute chunked transcription (constant RAM — any file length), GPU-first job routing (CPU fallback), stale-job sweeper + cancel convergence, signed media-token URLs, magic-byte content-type sniffing, RFC 5987 unicode filenames
 - **JWT-secured API**: Supabase JWKS (ES256) verification on every endpoint
+
+### Speaker diarization (W10)
+- **Detect speakers** button: pyannote speaker-diarization-3.1 on the P4 GPUs, runs after transcription without re-uploading
+- **Chunked processing**: 10-minute chunks so multi-hour files never hang in one giant pipeline call; turns re-offset to global time
+- **Global speaker re-clustering**: every turn gets a wespeaker embedding; agglomerative clustering (cosine) across *all* chunks means "Speaker 1" is the same person for the whole file — chunk-local labels are reconciled by duration-weighted majority vote, micro-clusters (<5% speech) fold into their nearest large cluster by centroid similarity
+- **Beta speaker toggle** on diarized videos: switch between detected labels and generic "Speaker 1/2/3"; downloads accept `?spk=real|generic`
 
 ### Sharing (W12)
 - **Expiring share links** (1–30 days, revocable): read-only transcript page that mirrors the viewer — same two-column layout, synced playback, click-to-seek, search — no account needed
@@ -109,6 +117,8 @@ docs/                  architecture, runbook, benchmarks
 - [x] W11: Global FTS search with click-to-jump (v0.6.0)
 - [x] W16-lite cheap wins: re-transcribe, cancel, thumbnails (v0.6.x)
 - [x] W12: Share links + public viewer, PDF export, ntfy notifications, hybrid search (v0.7.0)
-- [ ] W10: Diarization (pyannote on P4) — next
+- [x] W10: Diarization — chunked pyannote on P4 + global re-clustering, speaker rename/toggle, dual-mode downloads
+- [x] Public POC: pocscribly.holdheide.com + db.scribly.cc (studio blocked at proxy)
 - [ ] W13: pg_dump drill, Grafana provisioning-as-code, uptime alerting
-- [ ] W14/W15: Playwright E2E, security audit · W16: TLS + domain + v1.0.0
+- [ ] W14/W15: Playwright E2E, security audit
+- [ ] v1.0: scribly.cc TLS/domain, email verification, transcode pipeline, account tiers (Stripe) — full list in `docs/roadmap.md`
