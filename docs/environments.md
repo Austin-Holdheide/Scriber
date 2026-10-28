@@ -6,7 +6,7 @@ else — no database, no Redis, no media directory, no JWT keys, no frontend bun
 | | **prod** | **dev** |
 |---|---|---|
 | Host / CTs | neo 201, 202, 203, 204, 205 | neo **206** (`vm206-scribly-dev`) |
-| Address | 192.168.1.201–.205 (+ `pocscribly.holdheide.com`, `db.scribly.cc`) | **192.168.1.226** (LAN only until DNS/TLS is wired) |
+| Address | 192.168.1.201–.205 (+ `app.scribly.cc`, `db.scribly.cc`) | **192.168.1.226** (LAN only until DNS/TLS is wired) |
 | Supabase | 201 — 9 containers | 206 — 9 containers, own keys and DB |
 | API | 202 `transcriber-api` :8001 | 206 `transcriber-api-dev` :8002 |
 | Frontend | Caddy :80 on 202 (`/opt/scriber/frontend/dist`) | nginx :80 on 206 (`/var/www/scribly-dev`, `/api/` → :8002) |

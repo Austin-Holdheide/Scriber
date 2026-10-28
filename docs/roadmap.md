@@ -3,12 +3,12 @@
 Reference IDs: `W16-*` = launch/domain, `F-*` = features, `T-*` = tiers/monetization, `E-*` = environments, `O-*` = ops/hardening. Detailed tier notes: `scribly-tiers-launch.md` (same dir).
 
 ## Launch / Domain (W16)
-- **W16-1** DNS at Cloudflare: `scribly.cc` → home entry point; decide subdomains (`app.scribly.cc` for the app, root for landing)
+- **W16-1** DNS at Cloudflare: `scribly.cc` → home entry point; decide subdomains (`app.scribly.cc` for the app, root for landing) — **apex done** (`scribly.cc` serves the landing page); `app` record + cert still pending
 - **W16-2** NPM proxy host + Let's Encrypt cert for `scribly.cc` / `app.scribly.cc`
 - **W16-3** DECISION before launch: POC (pocscribly) currently shares the production Supabase on 201 — separate DB/project per environment (see E-1) before exposing to real users
 - **W16-4** Replace `.local` test accounts with real user accounts; keep `test@` only in dev
 - ~~**W16-5** Landing page for scribly.cc~~ — **DONE 2026-10-28** (`landing/`, Caddy vhost on 202, NPM host still to add)
-- **W16-6** app.scribly.cc 1.0 launch (typo'd "sribly" in original notes)
+- **W16-6** app.scribly.cc 1.0 launch — **switching over**: NPM host 20 now serves `app.scribly.cc` → 202:80; awaiting DNS record + certificate, then `pocscribly.holdheide.com` is removed
 - **W16-7** ToS / privacy policy (video storage, auto-deletion, watermarked exports)
 
 ## Features (F)

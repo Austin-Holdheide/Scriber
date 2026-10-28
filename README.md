@@ -1,6 +1,6 @@
 # Scribly
 
-**Scribly** (formerly Scriber) — self-hosted video transcription web app. Live at **https://scribly.cc** (LAN: http://192.168.1.202). Upload a video/audio file → faster-whisper ASR on 2× Tesla P4 (Proxmox LXCs) → searchable, editable, exportable, shareable transcripts.
+**Scribly** (formerly Scriber) — self-hosted video transcription web app. App at **https://app.scribly.cc** (marketing site at https://scribly.cc, LAN: http://192.168.1.202). Upload a video/audio file → faster-whisper ASR on 2× Tesla P4 (Proxmox LXCs) → searchable, editable, exportable, shareable transcripts.
 
 **Status: v0.7.x — W1–W12 + W10 complete, plus a dev/prod split and a self-contained storage layer.**
 
@@ -12,7 +12,7 @@ lives beside production; and the marketing site for `scribly.cc` ships from this
 Remaining: hostnames/TLS for `app.scribly.cc`, the dev-first migration discipline, transcode pipeline and
 account tiers, v1.0.0 (see `docs/roadmap.md`).
 
-Public POC: **https://pocscribly.holdheide.com** (frontend) with Supabase's API gateway exposed separately at **https://db.scribly.cc** (API prefixes only — the studio/dashboard is firewall-blocked at the proxy).
+Public surfaces: **https://app.scribly.cc** (app) and **https://scribly.cc** (landing page), with Supabase's API gateway exposed separately at **https://db.scribly.cc** (API prefixes only — the studio/dashboard is blocked at the proxy). The old `pocscribly.holdheide.com` name is retired.
 
 ## Features
 
@@ -126,7 +126,7 @@ docs/                  architecture, runbook, benchmarks
 - **Media storage:** dataset `neoDATA/media` (snapshots daily 03:15). Never point a CT at a network share again — a bind mount cannot hang the app when the NAS is off
 - **Backups:** `zfs list -t snapshot -r neoDATA/media` · `/mnt/media/pg/scribly-<date>.sql.gz` · weekly offsite log `/var/log/scribly-offsite.log`
 - **Dev environment:** CT 206 @ 192.168.1.226 — `transcriber-api-dev` :8002, `rq-worker-dev`, opt-in `rq-worker-dev-gpu`; keys are fully independent of prod
-- **Docs:** `docs/architecture.md` · `docs/runbook.md` · `docs/benchmarks.md` · `docs/environments.md`
+- **Docs:** `docs/architecture.md` · `docs/runbook.md` · `docs/benchmarks.md` · `docs/environments.md` · `docs/status.md` (current verified state)
 
 ## Roadmap
 - [x] W1–W6: Infra, Supabase, schema/RLS, upload, GPU pipeline, soaks
