@@ -1,0 +1,390 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Scribly — video in, searchable transcript out</title>
+<meta name="description" content="Scribly transcribes your videos, labels who said what, and makes every sentence searchable. Self-hosted, private, export to SRT, DOCX or PDF." />
+<meta property="og:title" content="Scribly — video in, searchable transcript out" />
+<meta property="og:description" content="Transcription, speaker labels, full-text search and share links for long videos. Self-hosted." />
+<meta property="og:type" content="website" />
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='7' fill='%230f1115'/%3E%3Cpath d='M16 5c.6 5.4 2.9 8 10.5 11C18.9 19 16.6 21.6 16 27c-.6-5.4-2.9-8-10.5-11C13.1 13 15.4 10.4 16 5Z' fill='%232563eb'/%3E%3C/svg%3E" />
+<style>
+  :root {
+    --bg: #0f1115;
+    --panel: #161a22;
+    --panel-2: #1b2029;
+    --line: #262a33;
+    --line-strong: #3a3f4b;
+    --text: #e6e8eb;
+    --muted: #9aa1ad;
+    --dim: #6f7683;
+    --accent: #2563eb;
+    --accent-soft: rgba(37, 99, 235, 0.14);
+    --radius: 12px;
+    --max: 1120px;
+  }
+  * { box-sizing: border-box; }
+  html { scroll-behavior: smooth; }
+  body {
+    margin: 0;
+    background: var(--bg);
+    color: var(--text);
+    font-family: system-ui, -apple-system, "Segoe UI", sans-serif;
+    font-size: 16px;
+    line-height: 1.6;
+    -webkit-font-smoothing: antialiased;
+  }
+  a { color: inherit; text-decoration: none; }
+  .wrap { max-width: var(--max); margin: 0 auto; padding: 0 24px; }
+
+  /* ---------- topbar ---------- */
+  .topbar {
+    position: sticky; top: 0; z-index: 20;
+    background: rgba(15, 17, 21, 0.86);
+    backdrop-filter: blur(10px);
+    border-bottom: 1px solid var(--line);
+  }
+  .topbar-inner {
+    max-width: var(--max); margin: 0 auto; padding: 14px 24px;
+    display: flex; align-items: center; justify-content: space-between; gap: 20px;
+  }
+  .brand { display: inline-flex; align-items: center; font-weight: 650; letter-spacing: 0.4px; font-size: 1.05rem; }
+  .brand .spark { width: 15px; height: 15px; color: var(--accent); margin-right: 8px; vertical-align: -2px; }
+  .nav { display: flex; gap: 26px; align-items: center; }
+  .nav a { color: var(--muted); font-size: 0.93rem; }
+  .nav a:hover { color: var(--text); }
+  @media (max-width: 760px) { .nav { display: none; } }
+
+  .btn {
+    display: inline-flex; align-items: center; gap: 8px;
+    padding: 0.6rem 1.05rem; border-radius: 8px;
+    background: var(--accent); color: #fff; border: 0;
+    font-size: 0.95rem; font-weight: 550; cursor: pointer;
+    transition: background 0.15s, transform 0.15s;
+  }
+  .btn:hover { background: #1d4ed8; transform: translateY(-1px); }
+  .btn.ghost {
+    background: transparent; border: 1px solid var(--line-strong); color: var(--text);
+  }
+  .btn.ghost:hover { background: var(--panel); border-color: var(--muted); }
+  .btn.small { padding: 0.45rem 0.85rem; font-size: 0.88rem; }
+
+  /* ---------- hero ---------- */
+  .hero { position: relative; overflow: hidden; padding: 84px 0 40px; }
+  .hero::before {
+    content: ""; position: absolute; inset: -220px 0 auto 50%;
+    width: 1100px; height: 620px; transform: translateX(-50%);
+    background: radial-gradient(ellipse at center, rgba(37, 99, 235, 0.20), transparent 62%);
+    pointer-events: none;
+  }
+  .hero-inner { position: relative; display: grid; grid-template-columns: 1.05fr 1fr; gap: 56px; align-items: center; }
+  @media (max-width: 940px) { .hero-inner { grid-template-columns: 1fr; gap: 40px; } .hero { padding-top: 56px; } }
+
+  .pill {
+    display: inline-flex; align-items: center; gap: 8px;
+    border: 1px solid var(--line-strong); border-radius: 999px;
+    padding: 5px 13px; font-size: 0.8rem; color: var(--muted);
+    background: var(--panel); margin-bottom: 22px;
+  }
+  .dot { width: 6px; height: 6px; border-radius: 50%; background: #3fb950; box-shadow: 0 0 8px #3fb95099; }
+
+  h1 { font-size: clamp(2.2rem, 4.6vw, 3.4rem); line-height: 1.1; margin: 0 0 18px; letter-spacing: -0.02em; }
+  h1 em { font-style: normal; color: var(--accent); }
+  .lede { font-size: 1.1rem; color: var(--muted); margin: 0 0 30px; max-width: 34em; }
+  .cta-row { display: flex; gap: 12px; flex-wrap: wrap; align-items: center; }
+  .fineprint { margin-top: 18px; font-size: 0.84rem; color: var(--dim); }
+
+  /* ---------- mock ---------- */
+  .mock {
+    background: linear-gradient(180deg, var(--panel-2), var(--panel));
+    border: 1px solid var(--line); border-radius: 14px;
+    box-shadow: 0 30px 70px -30px rgba(0,0,0,0.85);
+    overflow: hidden;
+  }
+  .mock-bar {
+    display: flex; align-items: center; gap: 8px;
+    padding: 11px 14px; border-bottom: 1px solid var(--line);
+    background: #12161d;
+  }
+  .mock-bar i { width: 9px; height: 9px; border-radius: 50%; background: #2c3340; display: block; }
+  .mock-title { margin-left: 8px; font-size: 0.76rem; color: var(--dim); letter-spacing: 0.03em; }
+  .mock-body { padding: 16px 16px 18px; }
+  .searchbox {
+    display: flex; align-items: center; gap: 9px;
+    background: #10141a; border: 1px solid var(--line-strong);
+    border-radius: 8px; padding: 9px 12px; margin-bottom: 14px;
+    font-size: 0.86rem; color: var(--muted);
+  }
+  .seg { display: flex; gap: 12px; padding: 9px 0; border-top: 1px dashed #22262f; font-size: 0.86rem; }
+  .seg:first-of-type { border-top: 0; }
+  .ts { color: var(--accent); font-variant-numeric: tabular-nums; flex: 0 0 52px; font-size: 0.8rem; padding-top: 2px; }
+  .who { color: var(--dim); font-size: 0.78rem; display: block; margin-bottom: 1px; letter-spacing: 0.02em; }
+  .seg p { margin: 0; color: #cdd2da; }
+  .seg mark { background: var(--accent-soft); color: #9dbaff; padding: 0 2px; border-radius: 3px; }
+  .seg.active { background: rgba(37, 99, 235, 0.07); border-radius: 6px; }
+
+  /* ---------- sections ---------- */
+  section { padding: 76px 0; }
+  .section-head { max-width: 620px; margin-bottom: 44px; }
+  .eyebrow { color: var(--accent); font-size: 0.78rem; letter-spacing: 0.14em; text-transform: uppercase; margin: 0 0 12px; font-weight: 600; }
+  h2 { font-size: clamp(1.5rem, 2.6vw, 2.05rem); margin: 0 0 14px; letter-spacing: -0.015em; line-height: 1.2; }
+  .section-head p { color: var(--muted); margin: 0; }
+
+  .grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 18px; }
+  @media (max-width: 940px) { .grid { grid-template-columns: repeat(2, 1fr); } }
+  @media (max-width: 620px) { .grid { grid-template-columns: 1fr; } }
+
+  .card {
+    background: var(--panel); border: 1px solid var(--line);
+    border-radius: var(--radius); padding: 22px;
+    transition: border-color 0.18s, transform 0.18s;
+  }
+  .card:hover { border-color: var(--line-strong); transform: translateY(-2px); }
+  .card h3 { margin: 0 0 8px; font-size: 1rem; letter-spacing: -0.005em; }
+  .card p { margin: 0; color: var(--muted); font-size: 0.92rem; }
+  .ico {
+    width: 34px; height: 34px; border-radius: 9px; margin-bottom: 14px;
+    display: grid; place-items: center;
+    background: var(--accent-soft); border: 1px solid rgba(37, 99, 235, 0.3);
+    color: #7ba6ff;
+  }
+  .ico svg { width: 18px; height: 18px; stroke: currentColor; fill: none; stroke-width: 1.7; stroke-linecap: round; stroke-linejoin: round; }
+
+  /* steps */
+  .steps { display: grid; grid-template-columns: repeat(3, 1fr); gap: 18px; }
+  @media (max-width: 860px) { .steps { grid-template-columns: 1fr; } }
+  .step { border-left: 2px solid var(--line-strong); padding: 4px 0 4px 18px; }
+  .step b { display: block; font-size: 0.76rem; letter-spacing: 0.14em; color: var(--dim); margin-bottom: 8px; }
+  .step h3 { margin: 0 0 6px; font-size: 1rem; }
+  .step p { margin: 0; color: var(--muted); font-size: 0.92rem; }
+
+  /* stats */
+  .stats {
+    display: grid; grid-template-columns: repeat(3, 1fr); gap: 18px;
+    border-top: 1px solid var(--line); border-bottom: 1px solid var(--line);
+    padding: 30px 0; margin: 0;
+  }
+  @media (max-width: 720px) { .stats { grid-template-columns: 1fr; gap: 22px; } }
+  .stat b { display: block; font-size: 1.55rem; letter-spacing: -0.02em; }
+  .stat span { color: var(--muted); font-size: 0.86rem; }
+
+  /* faq */
+  .faq { display: grid; grid-template-columns: repeat(2, 1fr); gap: 16px 34px; }
+  @media (max-width: 760px) { .faq { grid-template-columns: 1fr; } }
+  .qa { border-top: 1px solid var(--line); padding-top: 16px; }
+  .qa h3 { margin: 0 0 6px; font-size: 0.97rem; }
+  .qa p { margin: 0; color: var(--muted); font-size: 0.9rem; }
+
+  /* cta band */
+  .band {
+    background: linear-gradient(135deg, rgba(37,99,235,0.16), rgba(37,99,235,0.04));
+    border: 1px solid rgba(37, 99, 235, 0.35);
+    border-radius: 16px; padding: 40px; text-align: center;
+  }
+  .band h2 { margin-bottom: 10px; }
+  .band p { color: var(--muted); margin: 0 auto 24px; max-width: 40em; }
+
+  footer { border-top: 1px solid var(--line); padding: 34px 0 46px; color: var(--dim); font-size: 0.85rem; }
+  .foot { display: flex; justify-content: space-between; gap: 20px; flex-wrap: wrap; align-items: center; }
+  .foot a:hover { color: var(--text); }
+  .foot-links { display: flex; gap: 20px; flex-wrap: wrap; }
+</style>
+</head>
+<body>
+
+<header class="topbar">
+  <div class="topbar-inner">
+    <a class="brand" href="/"><svg class="spark" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 2.5c.5 4.6 2.4 6.9 9 9.5-6.6 2.6-8.5 4.9-9 9.5-.5-4.6-2.4-6.9-9-9.5 6.6-2.6 8.5-4.9 9-9.5Z" fill="currentColor"/></svg>Scribly</a>
+    <nav class="nav">
+      <a href="#features">Features</a>
+      <a href="#how">How it works</a>
+      <a href="#faq">FAQ</a>
+    </nav>
+    <a class="btn small" href="https://pocscribly.holdheide.com">Open the app</a>
+  </div>
+</header>
+
+<div class="hero">
+  <div class="wrap hero-inner">
+    <div>
+      <div class="pill"><i class="dot"></i> In development · early access</div>
+      <h1>Video in.<br /><em>Searchable</em> transcript out.</h1>
+      <p class="lede">
+        Scribly turns long videos into accurate, timestamped transcripts, works out who is
+        speaking, and lets you search every sentence — then export to SRT, DOCX or PDF, or
+        share a link that plays from the exact moment.
+      </p>
+      <div class="cta-row">
+        <a class="btn" href="https://pocscribly.holdheide.com">Try the demo</a>
+        <a class="btn ghost" href="#how">See how it works</a>
+      </div>
+      <p class="fineprint">Self-hosted and private — the media never leaves the box it runs on.</p>
+    </div>
+
+    <div class="mock" aria-hidden="true">
+      <div class="mock-bar"><i></i><i></i><i></i><span class="mock-title">the-wan-show-3h42m.mp4 · transcript</span></div>
+      <div class="mock-body">
+        <div class="searchbox">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#6f7683" stroke-width="2" stroke-linecap="round"><circle cx="11" cy="11" r="7"></circle><path d="m20 20-3.5-3.5"></path></svg>
+          8 results for “refund”
+        </div>
+        <div class="seg active">
+          <div class="ts">1:12:04</div>
+          <div><span class="who">Speaker 1</span><p>The <mark>refund</mark> policy is actually the part nobody reads until it matters.</p></div>
+        </div>
+        <div class="seg">
+          <div class="ts">1:12:39</div>
+          <div><span class="who">Speaker 2</span><p>Right, and we changed the <mark>refund</mark> window from 30 to 14 days last quarter.</p></div>
+        </div>
+        <div class="seg">
+          <div class="ts">1:14:02</div>
+          <div><span class="who">Speaker 1</span><p>So if you bought before that, you still get the old <mark>refund</mark> terms.</p></div>
+        </div>
+        <div class="seg">
+          <div class="ts">1:44:17</div>
+          <div><span class="who">Speaker 3</span><p>Let's put the <mark>refund</mark> numbers on screen.</p></div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<section id="features">
+  <div class="wrap">
+    <div class="section-head">
+      <p class="eyebrow">What it does</p>
+      <h2>Everything you need to work with a video as text</h2>
+      <p>Built for the files that are too long for the usual tools: podcasts, streams, lectures, interviews.</p>
+    </div>
+
+    <div class="grid">
+      <div class="card">
+        <div class="ico"><svg viewBox="0 0 24 24"><path d="M4 6h16M4 12h10M4 18h13"></path></svg></div>
+        <h3>Accurate, timestamped transcripts</h3>
+        <p>Word-level timing that stays in sync from minute one to hour four — no drift towards the end of long files.</p>
+      </div>
+      <div class="card">
+        <div class="ico"><svg viewBox="0 0 24 24"><circle cx="9" cy="8" r="3"></circle><path d="M3 20a6 6 0 0 1 12 0"></path><path d="M17 11a3 3 0 1 0-2-5"></path><path d="M15 20a5 5 0 0 1 6-4"></path></svg></div>
+        <h3>Speaker labels</h3>
+        <p>Voices are separated and labelled automatically, then you rename them once and every segment follows.</p>
+      </div>
+      <div class="card">
+        <div class="ico"><svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"></circle><path d="m20 20-3.6-3.6"></path></svg></div>
+        <h3>Search inside the audio</h3>
+        <p>Full-text search across every segment, including partial words. Click a hit and the player jumps to that second.</p>
+      </div>
+      <div class="card">
+        <div class="ico"><svg viewBox="0 0 24 24"><path d="M12 3v12"></path><path d="m7 11 5 5 5-5"></path><path d="M4 21h16"></path></svg></div>
+        <h3>Exports that open anywhere</h3>
+        <p>SRT and VTT for editors, DOCX and PDF for the people who will never open an editor.</p>
+      </div>
+      <div class="card">
+        <div class="ico"><svg viewBox="0 0 24 24"><path d="M10 13a5 5 0 0 0 7 0l2-2a5 5 0 0 0-7-7l-1 1"></path><path d="M14 11a5 5 0 0 0-7 0l-2 2a5 5 0 0 0 7 7l1-1"></path></svg></div>
+        <h3>Shareable transcript pages</h3>
+        <p>Send a link and anyone can read along, seek the audio and download the file — no account needed.</p>
+      </div>
+      <div class="card">
+        <div class="ico"><svg viewBox="0 0 24 24"><rect x="4" y="4" width="16" height="16" rx="2"></rect><path d="M9 9h6v6H9z"></path></svg></div>
+        <h3>Yours, on your hardware</h3>
+        <p>Runs on your own server with quantised models on consumer GPUs. No upload to somebody else's API.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section id="how">
+  <div class="wrap">
+    <div class="section-head">
+      <p class="eyebrow">How it works</p>
+      <h2>Three steps, no settings to learn</h2>
+    </div>
+    <div class="steps">
+      <div class="step">
+        <b>STEP 01</b>
+        <h3>Drop the file in</h3>
+        <p>MP4, MOV, MKV, MP3, WAV, FLAC — the format is detected from the bytes, not the extension.</p>
+      </div>
+      <div class="step">
+        <b>STEP 02</b>
+        <h3>It transcribes, then labels</h3>
+        <p>Long files are processed in chunks on the GPU so memory stays flat, then speakers are separated across the whole recording.</p>
+      </div>
+      <div class="step">
+        <b>STEP 03</b>
+        <h3>Read, search, share</h3>
+        <p>Search for a phrase, click to hear it, rename the speakers, download the format you need.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section>
+  <div class="wrap">
+    <div class="stats">
+      <div class="stat"><b>3h 42m</b><span>longest file transcribed, still in sync at the end</span></div>
+      <div class="stat"><b>13,685</b><span>segments indexed and searchable across a test library</span></div>
+      <div class="stat"><b>2 × P4</b><span>INT8 inference on Pascal cards — modest hardware is enough</span></div>
+    </div>
+  </div>
+</section>
+
+<section id="faq">
+  <div class="wrap">
+    <div class="section-head">
+      <p class="eyebrow">Questions</p>
+      <h2>The short answers</h2>
+    </div>
+    <div class="faq">
+      <div class="qa">
+        <h3>How long can a video be?</h3>
+        <p>Hours, not minutes. Three-hour-plus recordings work today; chunked processing keeps memory flat so nothing falls over mid-file.</p>
+      </div>
+      <div class="qa">
+        <h3>What can I upload?</h3>
+        <p>Anything ffmpeg can open, up to the per-plan size limit. Corrupt or half-downloaded files are rejected up front rather than after an hour of processing.</p>
+      </div>
+      <div class="qa">
+        <h3>Where do my files go?</h3>
+        <p>Onto the server running Scribly — a local dataset with snapshots and an off-box copy. Nothing is uploaded to a third-party transcription service.</p>
+      </div>
+      <div class="qa">
+        <h3>Does it handle accents and crosstalk?</h3>
+        <p>Well enough for real interviews and panel streams. Speaker separation is automatic, and you can rename speakers yourself at any time.</p>
+      </div>
+      <div class="qa">
+        <h3>Is there a free plan?</h3>
+        <p>The plan is a limited free tier for short videos plus a paid tier for long files, diarisation and bulk upload. Pricing lands with the public launch.</p>
+      </div>
+      <div class="qa">
+        <h3>Can I run it myself?</h3>
+        <p>Yes — that is how it is built. A Proxmox host, a Postgres instance, a Redis queue and a GPU (or patience on CPU) is the whole stack.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section>
+  <div class="wrap">
+    <div class="band">
+      <h2>Early access is open</h2>
+      <p>You can use the demo instance today — upload a file and see the transcript, speaker labels and share page for yourself.</p>
+      <a class="btn" href="https://pocscribly.holdheide.com">Open the demo</a>
+    </div>
+  </div>
+</section>
+
+<footer>
+  <div class="wrap foot">
+    <div><span class="brand"><svg class="spark" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 2.5c.5 4.6 2.4 6.9 9 9.5-6.6 2.6-8.5 4.9-9 9.5-.5-4.6-2.4-6.9-9-9.5 6.6-2.6 8.5-4.9 9-9.5Z" fill="currentColor"/></svg>Scribly</span> — &copy; 2026</div>
+    <div class="foot-links">
+      <a href="https://pocscribly.holdheide.com">App</a>
+      <a href="https://github.com/Austin-Holdheide/Scriber">Source</a>
+      <a href="/privacy.html">Privacy</a>
+      <a href="/terms.html">Terms</a>
+    </div>
+  </div>
+</footer>
+
+</body>
+</html>

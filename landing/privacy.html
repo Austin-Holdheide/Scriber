@@ -1,0 +1,58 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Privacy — Scribly</title>
+<style>
+  :root { --bg:#0f1115; --panel:#161a22; --line:#262a33; --text:#e6e8eb; --muted:#9aa1ad; --accent:#2563eb; }
+  * { box-sizing: border-box; }
+  body { margin:0; background:var(--bg); color:var(--text); font-family:system-ui,-apple-system,"Segoe UI",sans-serif; line-height:1.65; font-size:16px; }
+  .wrap { max-width:760px; margin:0 auto; padding:56px 24px 80px; }
+  a { color:#7ba6ff; }
+  .brand { display:inline-flex; align-items:center; font-weight:650; letter-spacing:.4px; margin-bottom:34px; }
+  .brand svg { width:15px; height:15px; color:var(--accent); margin-right:8px; }
+  h1 { font-size:1.9rem; letter-spacing:-.02em; margin:0 0 8px; }
+  .updated { color:var(--muted); font-size:.86rem; margin:0 0 30px; }
+  h2 { font-size:1.05rem; margin:32px 0 8px; }
+  p, li { color:#c6ccd4; }
+  ul { padding-left:20px; }
+  .note { background:var(--panel); border:1px solid var(--line); border-left:2px solid var(--accent); border-radius:8px; padding:14px 16px; color:var(--muted); font-size:.9rem; }
+  footer { border-top:1px solid var(--line); margin-top:44px; padding-top:18px; color:#6f7683; font-size:.85rem; }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <a class="brand" href="/"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 2.5c.5 4.6 2.4 6.9 9 9.5-6.6 2.6-8.5 4.9-9 9.5-.5-4.6-2.4-6.9-9-9.5 6.6-2.6 8.5-4.9 9-9.5Z" fill="currentColor"/></svg>Scribly</a>
+
+  <h1>Privacy</h1>
+  <p class="updated">Draft — last updated 28 October 2026</p>
+
+  <p class="note">This is a short, plain-language draft for the early-access period. It will be replaced by a reviewed policy before public launch.</p>
+
+  <h2>What we store</h2>
+  <ul>
+    <li>Your account email address and a password hash (we never store your password itself).</li>
+    <li>The video or audio files you upload, plus the transcripts, speaker labels and export files generated from them.</li>
+    <li>Basic operational records: when a job ran, how long it took, and any error it produced.</li>
+  </ul>
+
+  <h2>Where it is stored</h2>
+  <p>Scribly runs on privately operated hardware. Your files stay on that server and its backups; they are not sent to a third-party transcription or AI service.</p>
+
+  <h2>How long we keep it</h2>
+  <p>Files stay until you delete them. Deleting a video removes the media, its transcript, exports and share links. Backups roll off automatically within a few weeks. Free-tier accounts may be subject to an automatic retention window once paid plans launch; that limit will be stated clearly before it applies.</p>
+
+  <h2>Sharing</h2>
+  <p>Share links are unlisted: anyone with a link can view that transcript and play the media. Revoking or deleting the link stops access immediately. We do not publish, index or resell your content.</p>
+
+  <h2>Analytics</h2>
+  <p>No third-party analytics or advertising trackers are embedded in the app or on this site.</p>
+
+  <h2>Your choices</h2>
+  <p>You can delete any video or your account at any time. To request an export or full deletion, email <a href="mailto:privacy@scribly.cc">privacy@scribly.cc</a>.</p>
+
+  <footer><a href="/">Back to scribly.cc</a> · &copy; 2026 Scribly</footer>
+</div>
+</body>
+</html>
