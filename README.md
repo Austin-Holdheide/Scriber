@@ -2,7 +2,15 @@
 
 **Scribly** (formerly Scriber) — self-hosted video transcription web app. Live at **https://scribly.cc** (LAN: http://192.168.1.202). Upload a video/audio file → faster-whisper ASR on 2× Tesla P4 (Proxmox LXCs) → searchable, editable, exportable, shareable transcripts.
 
-**Status: v0.7.x — W1–W12 + W10 complete.** Full web app live with global hybrid search, expiring share links, PDF export, push notifications, thumbnails, and **speaker diarization** (chunked + globally re-clustered) — validated on real-world files up to 3h42m (416MB). Remaining: hardening (W13), tiers/monetization, v1.0.0 (see `docs/roadmap.md`).
+**Status: v0.7.x — W1–W12 + W10 complete, plus a dev/prod split and a self-contained storage layer.**
+
+Shipped: full web app with global hybrid search, expiring share links, PDF export, push notifications,
+thumbnails and **speaker diarization** (chunked + globally re-clustered, validated to 3h42m / 416MB);
+media now lives on a local ZFS dataset with snapshots, a nightly DB dump and a weekly off-box copy (no
+network filesystem in the hot path); a second **dev environment** (own Supabase, own keys, own media)
+lives beside production; and the marketing site for `scribly.cc` ships from this repo (`landing/`).
+Remaining: hostnames/TLS for `app.scribly.cc`, the dev-first migration discipline, transcode pipeline and
+account tiers, v1.0.0 (see `docs/roadmap.md`).
 
 Public POC: **https://pocscribly.holdheide.com** (frontend) with Supabase's API gateway exposed separately at **https://db.scribly.cc** (API prefixes only — the studio/dashboard is firewall-blocked at the proxy).
 
@@ -26,6 +34,10 @@ Public POC: **https://pocscribly.holdheide.com** (frontend) with Supabase's API 
 - **Expiring share links** (1–30 days, revocable): read-only transcript page that mirrors the viewer — same two-column layout, synced playback, click-to-seek, search — no account needed
 - Shares include media playback (token-authorized streaming with HTTP Range seeking) and downloads (SRT/DOCX/PDF/original)
 
+### Site & storage
+- **Landing page** (`landing/`, served by Caddy vhost for `scribly.cc`): static, dependency-free, matches the app palette; `privacy.html` / `terms.html` drafts included
+- **Local ZFS media store**: `neoDATA/media` bind-mounted into every app CT; daily `zfs snapshot` (keep 14), nightly `pg_dump` to `/mnt/media/pg`, weekly `rsync` to the NAS as a cold copy — scripts in `ops/`
+
 ### Extras
 - **PDF export**: compact timestamped segment layout (fpdf2 + DejaVu, unicode-safe), all segments (paged past PostgREST caps)
 - **Push notifications**: self-hosted ntfy — phone push when a job finishes, fails, or is cancelled
@@ -41,8 +53,9 @@ Public POC: **https://pocscribly.holdheide.com** (frontend) with Supabase's API 
 | worker (203) | 192.168.1.203 | Redis + CPU ASR fallback worker (14 threads) + **ntfy server (:9095)** | Redis (AOF), faster-whisper small/int8, ntfy v2.28 |
 | gpu1 (204) | 192.168.1.204 | GPU ASR worker → Tesla P4 #0 | faster-whisper **large-v3-turbo/int8**, CTranslate2 |
 | gpu2 (205) | 192.168.1.205 | GPU ASR worker → Tesla P4 #1 | same as gpu1 |
+| **dev (206)** | **192.168.1.226** | **dev environment** — own Supabase (:8000), own Redis, API :8002, CPU worker, nginx :80 serving the dev SPA | FastAPI + faster-whisper small/int8; GPU worker unit installed but **disabled** by default |
 
-**Data flow:** browser → Caddy :80 (SPA + `/api/*` proxy) → FastAPI streams upload in 1MiB chunks → TrueNAS NFS (`192.168.1.116:/mnt/main/transcriber`, host automount → bind-mounted at `/mnt/media`) → job row in Postgres → RQ enqueue (`scriber-<job_id>`, deterministic) → GPU workers pull (CPU worker = fallback) → chunked transcription (10-min segments, no-VAD inside chunks for exact timestamps) → thumbnail grab → `segments` rows + SRT/DOCX/PDF artifacts on NFS → progress streamed to `jobs` table (Supabase Realtime) → ntfy push on done/failed.
+**Data flow:** browser → Caddy :80 (SPA + `/api/*` proxy) → FastAPI streams upload in 1MiB chunks → local ZFS dataset `neoDATA/media` on the host, bind-mounted at `/mnt/media` in 201–205 (no NFS in the path) → job row in Postgres → RQ enqueue (`scriber-<job_id>`, deterministic) → GPU workers pull (CPU worker = fallback) → chunked transcription (10-min segments, no-VAD inside chunks for exact timestamps) → thumbnail grab → `segments` rows + SRT/DOCX/PDF artifacts on the dataset → progress streamed to `jobs` table (Supabase Realtime) → ntfy push on done/failed.
 
 DB stores metadata + transcript text only — media never touches Postgres.
 
@@ -97,6 +110,8 @@ frontend/              Vite + React + TS: auth, library w/ thumbs, viewer/editor
                        share modal, public share page, search
 migrations/            0001 init · 0002 fts · 0003 cancel+thumbs · 0004 share_links
                        · 0005 search hybrid
+landing/               scribly.cc marketing site (static: index, privacy, terms)
+ops/                   host-side protection scripts: zfs snapshot, offsite rsync, pg_dump
 observability/         Grafana dashboards, ntfy server config example
 docs/                  architecture, runbook, benchmarks
 ```
@@ -108,7 +123,10 @@ docs/                  architecture, runbook, benchmarks
 - **Deploy frontend:** `frontend/.env.local` must hold `VITE_SUPABASE_*` → `npm run build` on 202 → Caddy serves `dist/`
 - **After a host reboot:** run `nvidia-smi` once on the host (creates uvm node), then `pct restart 204 205` — service restarts do NOT rebind GPU devices
 - **ntfy:** subscribe your phone to `scriber-<first 10 chars of user id>` at `http://192.168.1.203:9095` (user: scriber)
-- **Docs:** `docs/architecture.md` · `docs/runbook.md` · `docs/benchmarks.md`
+- **Media storage:** dataset `neoDATA/media` (snapshots daily 03:15). Never point a CT at a network share again — a bind mount cannot hang the app when the NAS is off
+- **Backups:** `zfs list -t snapshot -r neoDATA/media` · `/mnt/media/pg/scribly-<date>.sql.gz` · weekly offsite log `/var/log/scribly-offsite.log`
+- **Dev environment:** CT 206 @ 192.168.1.226 — `transcriber-api-dev` :8002, `rq-worker-dev`, opt-in `rq-worker-dev-gpu`; keys are fully independent of prod
+- **Docs:** `docs/architecture.md` · `docs/runbook.md` · `docs/benchmarks.md` · `docs/environments.md`
 
 ## Roadmap
 - [x] W1–W6: Infra, Supabase, schema/RLS, upload, GPU pipeline, soaks
@@ -119,6 +137,9 @@ docs/                  architecture, runbook, benchmarks
 - [x] W12: Share links + public viewer, PDF export, ntfy notifications, hybrid search (v0.7.0)
 - [x] W10: Diarization — chunked pyannote on P4 + global re-clustering, speaker rename/toggle, dual-mode downloads
 - [x] Public POC: pocscribly.holdheide.com + db.scribly.cc (studio blocked at proxy)
-- [ ] W13: pg_dump drill, Grafana provisioning-as-code, uptime alerting
+- [x] Storage: media migrated off NFS to local ZFS dataset + snapshots + weekly off-box copy (2026-10-27)
+- [x] E-1 phase 1: separate dev environment (own Supabase/keys/media, CT 206)
+- [x] W16-5: landing page for scribly.cc
+- [ ] W13: pg_dump drill (dump→restore verified in dev), Grafana provisioning-as-code, uptime alerting
 - [ ] W14/W15: Playwright E2E, security audit
 - [ ] v1.0: scribly.cc TLS/domain, email verification, transcode pipeline, account tiers (Stripe) — full list in `docs/roadmap.md`

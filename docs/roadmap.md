@@ -7,7 +7,7 @@ Reference IDs: `W16-*` = launch/domain, `F-*` = features, `T-*` = tiers/monetiza
 - **W16-2** NPM proxy host + Let's Encrypt cert for `scribly.cc` / `app.scribly.cc`
 - **W16-3** DECISION before launch: POC (pocscribly) currently shares the production Supabase on 201 — separate DB/project per environment (see E-1) before exposing to real users
 - **W16-4** Replace `.local` test accounts with real user accounts; keep `test@` only in dev
-- **W16-5** Landing page for scribly.cc (marketing, separate from app)
+- ~~**W16-5** Landing page for scribly.cc~~ — **DONE 2026-10-28** (`landing/`, Caddy vhost on 202, NPM host still to add)
 - **W16-6** app.scribly.cc 1.0 launch (typo'd "sribly" in original notes)
 - **W16-7** ToS / privacy policy (video storage, auto-deletion, watermarked exports)
 
@@ -38,7 +38,7 @@ Reference IDs: `W16-*` = launch/domain, `F-*` = features, `T-*` = tiers/monetiza
 - **T-8** Bulk upload UI (premium only)
 
 ## Environments (E)
-- **E-1** Dev + prod split: separate Supabase project/DB, API instance, frontend deploy, Stripe test vs live keys (blocks W16-3; do before any paid work)
+- **E-1** Dev + prod split — **PHASE 1 DONE 2026-10-28** (CT 206: own Supabase + keys + Redis + media + frontend; see `docs/environments.md`). Remaining: hostnames/TLS for dev, Prometheus job, dev-first migration rule, Stripe test vs live keys.
 
 ## Ops / Hardening (O)
 - **O-1** NPM conf fragility: studio-403 allowlist (conf 21) + `/sb` route (conf 20) live in raw files the NPM UI will wipe on edit — move to Advanced/custom locations or document re-apply steps

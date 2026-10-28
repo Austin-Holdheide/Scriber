@@ -93,3 +93,49 @@ pct exec 201 -- sh -c 'docker exec -i supabase-db psql -U supabase_admin -d post
 - Player src: `/api/videos/{id}/download?mt=<token>&mu=<user_id>`
 - HMAC over video_id + user_id + expiry, secret = SUPABASE_JWT_SECRET (202 .env); TTL 10 min
 - Thumbnails use the same scheme: `POST /api/videos/thumb-tokens` (batch) -> `?mt=&mu=` per <img>
+
+## Storage / dataset failures (2026-10-27 migration)
+
+**Symptom: "videos are missing" / playback 500s.** Check `findmnt -T /mnt/media` inside the CT — it must
+report `neoDATA/media zfs`. If it reports a NAS path or is empty, the CT is mounting a stale source.
+Old failure class (NFS hard mount hanging when the NAS is off) is gone: media is a local bind mount now.
+
+**`pct set <ct> -mp0 <path>` APPENDS a second `mp0:` line — it does not replace.** PVE then mounts the
+first one, so the CT keeps the old source while `pct config` shows the new path. Delete the stale line in
+`/etc/pve/nodes/neo/lxc/<ct>.conf` and verify exactly one `mp0:` remains.
+
+**`pct stop/start` reject `--timeout` on this PVE build** (`Unknown option: timeout`, nothing happens).
+Plain `pct stop <ct>` works even with a hung mount. Confirm the restart actually happened with
+`pct exec <ct> -- uptime -p` — a script that "completed" may have restarted nothing.
+
+**Bind mounts don't cross filesystems.** Child ZFS datasets under the bind root appear EMPTY inside the
+CT. Keep media in one dataset (children folded into plain directories).
+
+**Ownership after any copy:** files must end up host uid `100000` (root inside the CT). NFS `mapall`
+made them appear as `nobody`/65534 — `chown -R 100000:100000` fixes reads *and* writes.
+
+**Offsite rsync wrote 5.4 GB onto the host root disk** because the disabled automount left
+`/mnt/transcriber-nfs` as a plain directory. `ops/scribly_media_offsite.sh` now probes TCP 2049, mounts
+explicitly, verifies `findmnt … FSTYPE == nfs`, and aborts otherwise. Keep that guard.
+
+## Delete left files behind (fixed 2026-10-28)
+
+`videos_delete.py` removed `.srt/.vtt/.docx/.txt/.thumb.jpg` but **not `.pdf`**, and never the dual-mode
+`-generic.*` exports — every delete leaked its PDF. It now includes `.pdf` and globs `<uuid>-generic*`.
+After a delete, `find /mnt/media/videos -name '<uuid>*'` must return nothing. When a new export kind is
+added, grep `videos_delete.py` in the same change.
+
+## Dev environment (CT 206) — traps
+
+- **PyAV drift kills jobs silently:** on Python ≥3.12 pip installs `av 19.x`, whose `av.open()` no longer
+  takes `metadata_errors`; every transcribe dies inside decode while RQ logs "Successfully completed".
+  Pin `av==18.1.0`.
+- **The API always enqueues to `transcribe-gpu`**, so a CPU-only dev worker needs `RQ_QUEUE=transcribe-gpu`
+  or it never receives work.
+- **Docker Hub is unreliable from neo** (CloudFront timeouts). Ship images from 201 instead:
+  `docker save` → `pct pull` → `pct push` → `docker load` (verify tags match the compose file first).
+- **Long in-CT commands die with the SSH session**: run them detached
+  (`setsid nohup … > /tmp/x.log 2>&1 &`) and poll the log.
+- **`mv dir/* dst/` skips dotfiles** — `.env` never moved and key generation failed with ".env not found".
+  Use `cp -a src/. dst/`.
+- Zombie RQ worker names after a hard stop: `redis-cli del rq:worker:<name>` then restart the unit.

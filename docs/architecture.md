@@ -52,6 +52,34 @@
 (`word:*` to_tsquery) UNION substring matches (ilike >=3 chars), deduped, limit 200.
 Fixes: "search" now surfaces research/researchers/unsearchable; partial words ("transcri") match.
 
+## Media storage (local ZFS, migrated 2026-10-27)
+
+```
+zpool neoDATA (RAIDZ1)
+ └─ neoDATA/media        /neoDATA/media   atime=off, compression=zstd
+     ├─ videos/          originals + srt/vtt/docx/pdf/thumb artifacts
+     ├─ hf-cache/        HF_HOME for whisper + pyannote models (shared by 204/205)
+     ├─ pg/              nightly pg_dump  (ops/scribly_pgdump.sh)
+     ├─ backups/         grafana dashboards
+     └─ .nvidia-libs-550 legacy driver fallback (unused)
+```
+
+Mounted as `mp0: /neoDATA/media,mp=/mnt/media` in CTs 201–205 (path unchanged, so no code edits).
+Everything under `media_root` is therefore a **local bind mount** — the app has no network filesystem in
+its hot path, and the NAS being powered off cannot hang uploads, playback or workers.
+
+Keep media in **one dataset**: a bind mount does not cross filesystem boundaries, so child datasets show
+up empty inside the CT. Ownership must be host uid `100000` (= root inside unprivileged CTs):
+`chown -R 100000:100000 /neoDATA/media`.
+
+Protection (see `ops/`): daily `zfs snapshot` (keep 14) · nightly `pg_dump` to `/mnt/media/pg` (keep 7) ·
+weekly `rsync` of videos/hf-cache/backups to the NAS as a **cold copy** (mounted only for the run).
+
+## Environments
+
+Two stacks share the host: prod (201–205) and dev (206 @ 192.168.1.226) with separate Supabase keys,
+Redis, media dataset and frontend bundle. See `docs/environments.md`.
+
 ## Networks
 - All LXCs on vmbr0, 192.168.1.0/24, gw 192.168.1.1. Static IPs .201-.205.
 - NFS: HOST automount (`x-systemd.automount,nofail` in fstab, mounts on first access - survives
