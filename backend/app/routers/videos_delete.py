@@ -10,7 +10,7 @@ from app.services.auth import get_current_user
 
 router = APIRouter()
 
-ARTIFACT_EXTS = (".srt", ".vtt", ".docx", ".txt", ".thumb.jpg")
+ARTIFACT_EXTS = (".srt", ".vtt", ".docx", ".txt", ".pdf", ".thumb.jpg")
 
 
 @router.delete("/{video_id}")
@@ -34,11 +34,17 @@ def delete_video(video_id: str, user_id: str = Depends(get_current_user)):
             src.unlink()
             removed.append(src.name)
         stem = src.stem
-        for ext in ARTIFACT_EXTS:
-            art = src.parent / (stem + ext)
-            if art.exists():
-                art.unlink()
-                removed.append(art.name)
+        # every artifact this video can own: plain exports, dual-mode "-generic" exports,
+        # and the thumbnail. Glob on the UUID stem so new export kinds can never leak again.
+        candidates = [src.parent / (stem + e) for e in ARTIFACT_EXTS]
+        candidates += sorted(src.parent.glob(stem + "-generic*"))
+        for art in candidates:
+            try:
+                if art.is_file():
+                    art.unlink()
+                    removed.append(art.name)
+            except OSError as e:
+                print(f"warn: could not remove {art}: {e}")
         # drop the user dir if now empty (keep tree tidy)
         try:
             src.parent.rmdir()
