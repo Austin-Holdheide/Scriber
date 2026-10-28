@@ -22,10 +22,10 @@ export default function App() {
   if (session === null) return <div className="container muted">loading…</div>;
 
   return (
-    <div className="app-shell">
+    <div className={session ? "app-shell" : "app-shell auth-mode"}>
       <header className="topbar">
         <div className="topbar-inner">
-          <h1><Link to="/" style={{ color: "inherit", textDecoration: "none" }}>✦ Scribly</Link></h1>
+          <h1><Link to="/" className="brand-link"><svg className="brand-spark" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 2.5c.5 4.6 2.4 6.9 9 9.5-6.6 2.6-8.5 4.9-9 9.5-.5-4.6-2.4-6.9-9-9.5 6.6-2.6 8.5-4.9 9-9.5Z" fill="currentColor" /></svg>Scribly</Link></h1>
           {session && <GlobalSearchInput />}
           {session && <button className="ghost" onClick={() => supabase.auth.signOut()}>sign out</button>}
         </div>

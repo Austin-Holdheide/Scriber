@@ -19,28 +19,91 @@ export default function Auth() {
     if (error) setErr(error.message);
   };
 
+  const switchMode = (m: "login" | "signup") => { setMode(m); setErr(""); };
+
   return (
-    <form onSubmit={submit} style={{ maxWidth: 360, margin: "4rem auto", padding: "0 1rem" }}>
-      <h2 style={{ marginTop: 0 }}>{mode === "login" ? "Sign in" : "Create account"}</h2>
-      <input
-        type="email" placeholder="email" value={email} required
-        onChange={(e) => setEmail(e.target.value)}
-        style={{ marginBottom: "0.75rem" }}
-      />
-      <input
-        type="password" placeholder="password" minLength={6} value={password} required
-        onChange={(e) => setPassword(e.target.value)}
-        style={{ marginBottom: "0.75rem" }}
-      />
-      {err && <p className="muted" style={{ color: "#f87171" }}>{err}</p>}
-      <button disabled={busy} style={{ width: "100%" }}>
-        {busy ? "…" : mode === "login" ? "Sign in" : "Sign up"}
-      </button>
-      <p className="muted" style={{ textAlign: "center" }}>
-        <a href="#" onClick={(e) => { e.preventDefault(); setMode(mode === "login" ? "signup" : "login"); setErr(""); }}>
-          {mode === "login" ? "no account? sign up" : "have an account? sign in"}
+    <div className="auth-wrap">
+      <div className="auth-glow" aria-hidden="true" />
+
+      <div className="auth-panel">
+        <a className="auth-brand" href="https://scribly.cc">
+          <svg className="auth-spark" viewBox="0 0 24 24" aria-hidden="true">
+            <path
+              d="M12 2.5c.5 4.6 2.4 6.9 9 9.5-6.6 2.6-8.5 4.9-9 9.5-.5-4.6-2.4-6.9-9-9.5 6.6-2.6 8.5-4.9 9-9.5Z"
+              fill="currentColor"
+            />
+          </svg>
+          Scribly
         </a>
-      </p>
-    </form>
+        <p className="auth-tagline">Video in. Searchable transcript out.</p>
+
+        <form className="auth-card" onSubmit={submit}>
+          <div className="auth-tabs" role="tablist">
+            <button
+              type="button"
+              role="tab"
+              aria-selected={mode === "login"}
+              className={mode === "login" ? "auth-tab active" : "auth-tab"}
+              onClick={() => switchMode("login")}
+            >
+              Sign in
+            </button>
+            <button
+              type="button"
+              role="tab"
+              aria-selected={mode === "signup"}
+              className={mode === "signup" ? "auth-tab active" : "auth-tab"}
+              onClick={() => switchMode("signup")}
+            >
+              Create account
+            </button>
+          </div>
+
+          <label className="auth-label" htmlFor="auth-email">Email</label>
+          <input
+            id="auth-email"
+            type="email"
+            placeholder="you@example.com"
+            value={email}
+            required
+            autoComplete="email"
+            onChange={(e) => setEmail(e.target.value)}
+          />
+
+          <label className="auth-label" htmlFor="auth-password">Password</label>
+          <input
+            id="auth-password"
+            type="password"
+            placeholder={mode === "signup" ? "at least 6 characters" : "your password"}
+            minLength={6}
+            value={password}
+            required
+            autoComplete={mode === "login" ? "current-password" : "new-password"}
+            onChange={(e) => setPassword(e.target.value)}
+          />
+
+          {err && <p className="auth-error">{err}</p>}
+
+          <button className="auth-submit" disabled={busy}>
+            {busy ? "…" : mode === "login" ? "Sign in" : "Create account"}
+          </button>
+
+          <p className="auth-switch">
+            {mode === "login" ? "No account yet?" : "Already have an account?"}{" "}
+            <a
+              href="#"
+              onClick={(e) => { e.preventDefault(); switchMode(mode === "login" ? "signup" : "login"); }}
+            >
+              {mode === "login" ? "Create one" : "Sign in"}
+            </a>
+          </p>
+        </form>
+
+        <p className="auth-legal">
+          By continuing you agree to the <a href="https://scribly.cc/terms.html">terms</a> and{" "}
+          <a href="https://scribly.cc/privacy.html">privacy</a> policy.
+        </p>
+      </div>
+    </div>
   );
 }
