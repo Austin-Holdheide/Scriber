@@ -139,3 +139,15 @@ added, grep `videos_delete.py` in the same change.
 - **`mv dir/* dst/` skips dotfiles** — `.env` never moved and key generation failed with ".env not found".
   Use `cp -a src/. dst/`.
 - Zombie RQ worker names after a hard stop: `redis-cli del rq:worker:<name>` then restart the unit.
+
+## Dev frontend: "invalid token … HTTP Error 403: Forbidden" (2026-10-28)
+
+`/api/*` returns 401 with `invalid token: Fail to fetch data from the url, err: "HTTP Error 403: Forbidden"`.
+Cause: the API verifies user JWTs by fetching the JWKS, and `SUPABASE_URL` was pointed at the **public**
+hostname (`https://dev-db.scribly.cc`). Cloudflare's bot protection answers Python's `urllib` with 403 —
+`curl` to the same URL returns 200, so the proxy looks innocent.
+
+Fix: server-side `SUPABASE_URL` stays internal (`http://192.168.1.226:8000`); only the browser bundle uses
+`https://dev-db.scribly.cc`. Verify with `urllib`, not curl:
+`python3 -c "import urllib.request;print(urllib.request.urlopen('https://dev-db.scribly.cc/auth/v1/.well-known/jwks.json').status)"`
+→ must print 200.

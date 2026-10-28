@@ -9,13 +9,40 @@ else — no database, no Redis, no media directory, no JWT keys, no frontend bun
 | Address | 192.168.1.201–.205 (+ `app.scribly.cc`, `db.scribly.cc`) | **192.168.1.226** (LAN only until DNS/TLS is wired) |
 | Supabase | 201 — 9 containers | 206 — 9 containers, own keys and DB |
 | API | 202 `transcriber-api` :8001 | 206 `transcriber-api-dev` :8002 |
-| Frontend | Caddy :80 on 202 (`/opt/scriber/frontend/dist`) | nginx :80 on 206 (`/var/www/scribly-dev`, `/api/` → :8002) |
+| Frontend | Caddy :80 on 202 (`/opt/scriber/frontend/dist`) | nginx :80 on 206 (`/var/www/scribly-dev`, `/api/` → :8002), public at **https://dev.scribly.cc** |
 | Redis / queues | 203 | 206, `127.0.0.1` |
 | Workers | `rq-worker@203` (CPU), `rq-worker@204/205` (P4s) | `rq-worker-dev` (CPU, always on), `rq-worker-dev-gpu` (**disabled** — opt-in P4) |
 | Media | `neoDATA/media` → `/mnt/media` | `neoDATA/dev/media` → `/mnt/media` |
 | DB data | docker volume on 201 | `neoDATA/dev/pgdata` (own dataset, snapshot-able) |
 | Code | `/opt/scriber` | `/opt/scriber-dev` |
 | Secrets | `/root/supabase-project/.env` on 201 | `/opt/supabase/.env` on 206 |
+
+### Two different base URLs, on purpose
+
+| Consumer | Supabase base URL |
+|---|---|
+| browser (bundle) | `https://dev-db.scribly.cc` |
+| backend / worker (`.env SUPABASE_URL`) | `http://192.168.1.226:8000` |
+
+The split is not cosmetic: **Cloudflare's bot protection returns 403 to Python's `urllib`**, which is what
+`PyJWKClient` uses to fetch `/.well-known/jwks.json`. Point `SUPABASE_URL` at the public hostname and every
+authenticated request fails with
+`{"detail":"invalid token: Fail to fetch data from the url, err: \"HTTP Error 403: Forbidden\""}` — while
+plain `curl` against the same URL returns 200, which makes it look like a proxy fault. Server-side code
+always talks to the internal gateway; only the browser goes through Cloudflare.
+
+**Build dev's bundle on 206, not 202.** 206 has its own `node_modules` (`npm ci` in
+`/opt/scriber-dev/frontend`):
+
+```bash
+cd /opt/scriber-dev/frontend
+ANON=$(grep -m1 '^ANON_KEY=' /opt/supabase/.env | cut -d= -f2-)
+VITE_SUPABASE_URL=https://dev-db.scribly.cc VITE_SUPABASE_ANON_KEY="$ANON" \
+  npx vite build --outDir /var/www/scribly-dev.new
+rm -rf /var/www/scribly-dev && mv /var/www/scribly-dev.new /var/www/scribly-dev
+```
+Building the dev bundle from 202's source means dev silently ships **prod's** frontend code (it happened
+once: the redesigned login vanished from dev because prod's source had been reverted).
 
 **Never reuse a prod key in dev.** The dev key set was generated fresh with
 `utils/generate-keys.sh --update-env` + `utils/add-new-auth-keys.sh --update-env`; 18 secret values are
