@@ -185,6 +185,7 @@ def diarize_job(job_row_id: str, video_id: str, storage_path: str):
         # 3b) GLOBAL speaker reconciliation (F-12): cluster all turn embeddings
         #     across ALL chunks so a label means the same person for the whole
         #     file, then remap chunk-local speakers by duration-weighted majority.
+        reclustered = False
         try:
             import numpy as np
             from collections import defaultdict as _dd2
@@ -231,6 +232,7 @@ def diarize_job(job_row_id: str, video_id: str, storage_path: str):
                     votes[_spk][int(gl2[j])] += (_en - _st)
                 spk_map = {spk: "g%d" % max(v, key=v.get) for spk, v in votes.items()}
                 turns = [(st, en, spk_map.get(spk, spk)) for st, en, spk in turns]
+                reclustered = True
                 log.info("global re-cluster: %d embedded turns, %d raw clusters -> %d final speakers",
                          len(idx), len(set(gl.tolist())), len(set(gl2)))
             else:
@@ -271,7 +273,11 @@ def diarize_job(job_row_id: str, video_id: str, storage_path: str):
         dur_by_spk = defaultdict(float)
         for st, en, spk in turns:
             dur_by_spk[spk] += (en - st)
-        dominant = {spk for spk, d in dur_by_spk.items() if d >= total_speech * 0.05}
+        # after global re-clustering, micro-clusters were already attached to their
+        # nearest large cluster, so the old 5% fold only destroys real speakers
+        # (it collapsed a 96%/4% two-speaker result to one). Use 1% there.
+        _fold_min = 0.01 if reclustered else 0.05
+        dominant = {spk for spk, d in dur_by_spk.items() if d >= total_speech * _fold_min}
         if dominant:
             fallback = sorted(dominant, key=lambda d: -dur_by_spk[d])[0]
             turns = [(st, en, (spk if spk in dominant else fallback)) for st, en, spk in turns]
