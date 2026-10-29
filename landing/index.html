@@ -161,11 +161,11 @@
 
   /* stats */
   .stats {
-    display: grid; grid-template-columns: repeat(3, 1fr); gap: 18px;
+    display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 18px;
     border-top: 1px solid var(--line); border-bottom: 1px solid var(--line);
     padding: 30px 0; margin: 0;
   }
-  @media (max-width: 720px) { .stats { grid-template-columns: 1fr; gap: 22px; } }
+
   .stat b { display: block; font-size: 1.55rem; letter-spacing: -0.02em; }
   .stat span { color: var(--muted); font-size: 0.86rem; }
 
@@ -219,7 +219,6 @@
         <a class="btn" href="https://app.scribly.cc">Try the demo</a>
         <a class="btn ghost" href="#how">See how it works</a>
       </div>
-      <p class="fineprint">Self-hosted and private — the media never leaves the box it runs on.</p>
     </div>
 
     <div class="mock" aria-hidden="true">
@@ -284,11 +283,6 @@
         <h3>Shareable transcript pages</h3>
         <p>Send a link and anyone can read along, seek the audio and download the file — no account needed.</p>
       </div>
-      <div class="card">
-        <div class="ico"><svg viewBox="0 0 24 24"><rect x="4" y="4" width="16" height="16" rx="2"></rect><path d="M9 9h6v6H9z"></path></svg></div>
-        <h3>Yours, on your hardware</h3>
-        <p>Runs on your own server with quantised models on consumer GPUs. No upload to somebody else's API.</p>
-      </div>
     </div>
   </div>
 </section>
@@ -324,7 +318,6 @@
     <div class="stats">
       <div class="stat"><b>3h 42m</b><span>longest file transcribed, still in sync at the end</span></div>
       <div class="stat"><b>13,685</b><span>segments indexed and searchable across a test library</span></div>
-      <div class="stat"><b>2 × P4</b><span>INT8 inference on Pascal cards — modest hardware is enough</span></div>
     </div>
   </div>
 </section>
@@ -355,10 +348,6 @@
       <div class="qa">
         <h3>Is there a free plan?</h3>
         <p>The plan is a limited free tier for short videos plus a paid tier for long files, diarisation and bulk upload. Pricing lands with the public launch.</p>
-      </div>
-      <div class="qa">
-        <h3>Can I run it myself?</h3>
-        <p>Yes — that is how it is built. A Proxmox host, a Postgres instance, a Redis queue and a GPU (or patience on CPU) is the whole stack.</p>
       </div>
     </div>
   </div>
