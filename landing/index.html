@@ -189,6 +189,59 @@
   .foot { display: flex; justify-content: space-between; gap: 20px; flex-wrap: wrap; align-items: center; }
   .foot a:hover { color: var(--text); }
   .foot-links { display: flex; gap: 20px; flex-wrap: wrap; }
+  /* ---- pricing ---- */
+  .section-sub { color: var(--muted); font-size: 0.97rem; line-height: 1.6; max-width: 58ch; margin: 10px 0 0; }
+  .pricing { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 18px; margin-top: 32px; }
+  .plan {
+    background: var(--panel);
+    border: 1px solid var(--line);
+    border-radius: 14px;
+    padding: 26px 24px;
+    display: flex;
+    flex-direction: column;
+  }
+  .plan.pro { border-color: rgba(37, 99, 235, 0.55); box-shadow: 0 0 0 1px rgba(37, 99, 235, 0.12) inset; }
+  .plan-name {
+    margin: 0;
+    font-size: 0.78rem;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    color: var(--muted);
+    font-weight: 600;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  .plan-tag {
+    font-size: 0.62rem;
+    letter-spacing: 0.1em;
+    color: #93c5fd;
+    border: 1px solid rgba(37, 99, 235, 0.5);
+    border-radius: 999px;
+    padding: 2px 7px;
+    text-transform: uppercase;
+  }
+  .plan-price { margin: 14px 0 18px; display: flex; align-items: baseline; gap: 10px; flex-wrap: wrap; }
+  .plan-price b { font-size: 2.1rem; color: var(--text); font-weight: 600; letter-spacing: -0.02em; }
+  .plan-price span { color: var(--muted); font-size: 0.85rem; }
+  .plan-list { list-style: none; padding: 0; margin: 0 0 22px; display: grid; gap: 9px; }
+  .plan-list li { position: relative; padding-left: 20px; color: var(--muted); font-size: 0.9rem; line-height: 1.45; }
+  .plan-list li::before {
+    content: "";
+    position: absolute;
+    left: 3px;
+    top: 0.5em;
+    width: 7px;
+    height: 7px;
+    border-radius: 2px;
+    background: #2563eb;
+    opacity: 0.85;
+  }
+  .plan .btn { margin-top: auto; text-align: center; }
+  .btn.alt { background: transparent; border: 1px solid rgba(37, 99, 235, 0.6); color: #93c5fd; }
+  .btn.alt:hover { background: rgba(37, 99, 235, 0.12); }
+  .pricing-note { color: var(--muted); font-size: 0.82rem; line-height: 1.6; margin: 20px 0 0; max-width: 70ch; }
+
 </style>
 </head>
 <body>
@@ -199,6 +252,7 @@
     <nav class="nav">
       <a href="#features">Features</a>
       <a href="#how">How it works</a>
+      <a href="#pricing">Pricing</a>
       <a href="#faq">FAQ</a>
     </nav>
     <a class="btn small" href="https://app.scribly.cc">Open the app</a>
@@ -321,6 +375,50 @@
   </div>
 </section>
 
+<section id="pricing">
+  <div class="wrap">
+    <div class="section-head">
+      <p class="eyebrow">Pricing</p>
+      <h2>Free to try, Pro when it matters</h2>
+      <p class="section-sub">Every account starts free. Pro is for the long recordings, the speaker labels and the files you want to keep.</p>
+    </div>
+
+    <div class="pricing">
+      <div class="plan">
+        <p class="plan-name">Free</p>
+        <p class="plan-price"><b>$0</b><span>forever</span></p>
+        <ul class="plan-list">
+          <li>1 transcription a day</li>
+          <li>Files up to 15 minutes</li>
+          <li>Searchable transcript, SRT, DOCX and PDF</li>
+          <li>Share links that last 7 days</li>
+          <li>Files kept for 7 days</li>
+        </ul>
+        <a class="btn small" href="https://app.scribly.cc">Start free</a>
+      </div>
+
+      <div class="plan pro">
+        <p class="plan-name">Pro <span class="plan-tag">coming soon</span></p>
+        <p class="plan-price"><b>$9</b><span>per month &middot; or $90 a year</span></p>
+        <ul class="plan-list">
+          <li>Up to 50 transcriptions per 12 hours</li>
+          <li>Files up to 5 GB &mdash; 24 hours long</li>
+          <li>Speaker labels, 10 recordings a day</li>
+          <li>Share links that last 30 days</li>
+          <li>Files kept until you delete them</li>
+          <li>Bulk upload and priority queue</li>
+        </ul>
+        <a class="btn small alt" href="https://app.scribly.cc/pro">See Pro</a>
+      </div>
+    </div>
+
+    <p class="pricing-note">
+      Prices in USD. Pro is not on sale yet &mdash; request early access from inside the app and we will
+      email the address on your account when it opens. Nothing is charged today.
+    </p>
+  </div>
+</section>
+
 <section id="faq">
   <div class="wrap">
     <div class="section-head">
@@ -346,7 +444,7 @@
       </div>
       <div class="qa">
         <h3>Is there a free plan?</h3>
-        <p>The plan is a limited free tier for short videos plus a paid tier for long files, diarisation and bulk upload. Pricing lands with the public launch.</p>
+        <p>Yes, and it is not a trial: one transcription a day of up to 15 minutes, with the transcript, SRT, DOCX and PDF to take away. Pro adds long files, speaker labels, 30-day share links and keeps your media until you delete it.</p>
       </div>
     </div>
   </div>
