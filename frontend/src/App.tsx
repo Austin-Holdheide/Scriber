@@ -5,6 +5,7 @@ import { supabase } from "./lib/supabase";
 import Auth from "./components/Auth";
 import Videos from "./components/Videos";
 import SearchPage from "./pages/SearchPage";
+import Pro from "./pages/Pro";
 import SharePage from "./pages/SharePage";
 import VideoPage from "./pages/VideoPage";
 
@@ -61,6 +62,7 @@ export default function App() {
           <Route path="/" element={session ? <Videos /> : <Auth />} />
           <Route path="/videos/:videoId" element={session ? <VideoPage /> : <Auth />} />
           <Route path="/search" element={session ? <SearchPage /> : <Auth />} />
+          <Route path="/pro" element={session ? <Pro /> : <Auth />} />
         </RR_Routes>
       )}
     </div>

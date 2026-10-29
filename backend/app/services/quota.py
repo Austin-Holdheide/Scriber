@@ -180,10 +180,7 @@ def _quota_exceeded(user_id: str, plan: Plan, kind: str, limit: int, seen: int) 
         "used": seen,
         "window_s": plan.window_s,
         "resets_at": resets,
-        "message": (
-            f"You've used all {limit} of your {kind} allowance on the {plan.name} plan. "
-            + ("It resets on a rolling window." if plan.window_s else "")
-        ).strip(),
+        "message": f"You've used all {limit} of your {kind} allowance on the {plan.name} plan.",
     })
 
 

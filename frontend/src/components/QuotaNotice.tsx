@@ -1,4 +1,5 @@
 import { useEffect } from "react";
+import { useNavigate } from "react-router-dom";
 
 /**
  * Plan-limit notice.
@@ -51,7 +52,7 @@ function hintFor(d: QuotaDetail): string | null {
     return whenResets(d.resets_at);
   }
   if (d.error === "feature_locked") {
-    return "available on the premium plan";
+    return "available on Scribly Pro";
   }
   if (d.error === "upload_too_large") {
     return `${mb(d.size_bytes)} MB sent · ${mb(d.limit_bytes)} MB allowed`;
@@ -65,9 +66,12 @@ function hintFor(d: QuotaDetail): string | null {
 }
 
 export default function QuotaNotice({ detail, onClose }: { detail: QuotaDetail | null; onClose: () => void }) {
+  const navigate = useNavigate();
   const open = !!detail;
   const meta = (detail && COPY[detail.error || ""]) || { title: "Plan limit" };
   const hint = detail ? hintFor(detail) : null;
+  // only offer the upgrade when there is somewhere to go: a free account
+  const offerPro = !!detail && (detail.plan ?? "free") === "free";
 
   useEffect(() => {
     if (!open) return;
@@ -89,6 +93,18 @@ export default function QuotaNotice({ detail, onClose }: { detail: QuotaDetail |
         <p className="quota-pop-title">{meta.title}</p>
         <p className="quota-pop-msg">{detail.message || "This action isn't allowed on your current plan."}</p>
         {hint && <p className="quota-pop-hint">{hint}</p>}
+
+        {offerPro && (
+          <div className="quota-pop-actions">
+            <button
+              className="quota-pop-cta"
+              onClick={() => { onClose(); navigate("/pro"); }}
+            >
+              Upgrade to Pro
+            </button>
+            <button className="quota-pop-later" onClick={onClose}>Not now</button>
+          </div>
+        )}
       </div>
       <button className="quota-pop-close" onClick={onClose} aria-label="Dismiss">
         ×

@@ -504,3 +504,75 @@ a.brand-link { display: inline-flex; align-items: center; gap: 8px; color: inher
 @media (max-width: 560px) {
   .quota-pop { right: 12px; left: 12px; bottom: 12px; width: auto; }
 }
+
+/* ---- quota notification: upgrade actions ---- */
+.quota-pop-actions { display: flex; gap: 8px; align-items: center; margin-top: 12px; }
+.quota-pop-cta {
+  background: #2563eb;
+  color: #fff;
+  border: 0;
+  border-radius: 7px;
+  padding: 7px 13px;
+  font-size: 0.84rem;
+  font-weight: 600;
+  cursor: pointer;
+  letter-spacing: 0.01em;
+}
+.quota-pop-cta:hover { background: #1d4ed8; }
+.quota-pop-later {
+  background: none;
+  border: 0;
+  color: #9aa3b0;
+  font-size: 0.82rem;
+  cursor: pointer;
+  padding: 7px 4px;
+}
+.quota-pop-later:hover { color: #e8ebef; }
+
+/* ---- /pro page ---- */
+.pro-page { max-width: 820px; }
+.pro-back { display: inline-block; color: #9aa3b0; font-size: 0.84rem; text-decoration: none; margin-bottom: 1.6rem; }
+.pro-back:hover { color: #e8ebef; }
+.pro-wordmark { display: flex; align-items: center; gap: 8px; font-weight: 600; color: #e8ebef; letter-spacing: 0.02em; }
+.pro-spark { width: 16px; height: 16px; color: #2563eb; }
+.pro-badge {
+  font-size: 0.7rem;
+  text-transform: uppercase;
+  letter-spacing: 0.12em;
+  color: #93c5fd;
+  border: 1px solid rgba(37, 99, 235, 0.5);
+  border-radius: 999px;
+  padding: 2px 8px;
+  margin-left: 4px;
+}
+.pro-title { font-size: 2rem; line-height: 1.2; margin: 1rem 0 0.8rem; color: #e8ebef; font-weight: 600; }
+.pro-sub { color: #9aa3b0; font-size: 0.95rem; line-height: 1.6; max-width: 62ch; margin: 0 0 2rem; }
+
+.pro-table { width: 100%; border-collapse: collapse; margin: 0 0 2rem; font-size: 0.9rem; }
+.pro-table th, .pro-table td { text-align: left; padding: 11px 12px; border-bottom: 1px solid #1e2430; }
+.pro-table thead th { font-size: 0.75rem; text-transform: uppercase; letter-spacing: 0.1em; color: #6b7280; font-weight: 600; }
+.pro-table tbody th { color: #c8ced8; font-weight: 500; }
+.pro-table td { color: #9aa3b0; }
+.pro-table .pro-col { color: #cfe0ff; background: rgba(37, 99, 235, 0.07); }
+.pro-table thead .pro-col { color: #93c5fd; }
+
+.pro-cta { border-top: 1px solid #1e2430; padding-top: 1.6rem; }
+.pro-price { color: #c8ced8; font-size: 0.92rem; margin: 0 0 1rem; }
+.pro-button {
+  background: #2563eb;
+  color: #fff;
+  border: 0;
+  border-radius: 8px;
+  padding: 11px 20px;
+  font-size: 0.92rem;
+  font-weight: 600;
+  cursor: pointer;
+}
+.pro-button:hover:not(:disabled) { background: #1d4ed8; }
+.pro-button:disabled { opacity: 0.6; cursor: default; }
+.pro-onlist { color: #4ade80; font-size: 0.92rem; margin: 0; }
+.pro-err { color: #f87171; font-size: 0.85rem; margin: 10px 0 0; }
+.pro-fine { color: #6b7280; font-size: 0.8rem; line-height: 1.6; margin: 1.4rem 0 0; max-width: 60ch; }
+
+/* the /pro hero is a plain block: the global header rule must not apply */
+.pro-hero { display: block; }

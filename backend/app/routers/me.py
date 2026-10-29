@@ -6,6 +6,7 @@ from fastapi import APIRouter, Depends, HTTPException
 
 from app.services.auth import get_current_user
 from app.services import quota
+from app.services.supabase_client import admin_client
 
 log = logging.getLogger("scriber.me")
 router = APIRouter()
@@ -41,3 +42,30 @@ def change_plan(body: dict, user_id: str = Depends(get_current_user)):
 
     log.info("plan changed: %s -> %s by %s", target, plan, user_id)
     return {"user_id": target, "plan": row.get("plan", plan), "status": row.get("status", "active")}
+
+
+@router.get("/interest")
+def my_interest(user_id: str = Depends(get_current_user)):
+    """Has this account asked for Pro yet? (T-1 stand-in: no checkout exists.)"""
+    try:
+        r = (admin_client().table("pro_interest")
+             .select("user_id, created_at").eq("user_id", user_id).limit(1).execute())
+    except Exception:
+        log.exception("interest lookup failed")
+        return {"on_list": False}
+    return {"on_list": bool(r.data)}
+
+
+@router.post("/interest")
+def request_pro(user_id: str = Depends(get_current_user)):
+    """Record interest in Pro. Idempotent — clicking twice is a no-op."""
+    plan = quota.plan_for(user_id).name
+    try:
+        (admin_client().table("pro_interest")
+         .upsert({"user_id": user_id, "plan_at_request": plan},
+                 on_conflict="user_id", ignore_duplicates=True).execute())
+    except Exception:
+        log.exception("interest insert failed")
+        raise HTTPException(500, "could not record that request")
+    log.info("pro interest: %s (plan=%s)", user_id, plan)
+    return {"on_list": True, "plan": plan}
