@@ -283,3 +283,152 @@ button.ghost.sm { padding: 0.3rem 0.65rem; font-size: 0.8rem; }
 .topbar-inner h1 { line-height: 1; }
 /* old header margin-bottom removed - pages own their spacing */
 header.topbar h1 { font-size: 1.4rem; margin: 0; letter-spacing: 0.5px; }
+
+/* ---------- auth screen (matches the landing page) ---------- */
+/* the legacy `header { margin-bottom: 2rem }` rule still fires on the topbar;
+   on a full-height login screen it pushes past the viewport by exactly 32px */
+.app-shell.auth-mode .topbar { margin-bottom: 0; }
+.auth-wrap {
+  position: relative;
+  min-height: calc(100vh - 63px);
+  display: grid;
+  place-items: center;
+  padding: 56px 20px 72px;
+  overflow: hidden;
+}
+.auth-glow {
+  position: absolute;
+  inset: -180px 0 auto 50%;
+  width: 900px; height: 520px;
+  transform: translateX(-50%);
+  background: radial-gradient(ellipse at center, rgba(37, 99, 235, 0.20), transparent 62%);
+  pointer-events: none;
+}
+.auth-panel {
+  position: relative;
+  width: 100%;
+  max-width: 412px;
+  text-align: center;
+}
+.auth-brand {
+  display: inline-flex;
+  align-items: center;
+  gap: 9px;
+  font-weight: 650;
+  font-size: 1.18rem;
+  letter-spacing: 0.4px;
+  color: #e6e8eb;
+  text-decoration: none;
+}
+.auth-spark { width: 18px; height: 18px; color: #2563eb; flex: 0 0 auto; }
+.auth-tagline {
+  color: #9aa1ad;
+  font-size: 0.88rem;
+  margin: 0.4rem 0 1.7rem;
+}
+.auth-card {
+  background: linear-gradient(180deg, #1b2029, #161a22);
+  border: 1px solid #262a33;
+  border-radius: 14px;
+  padding: 22px 22px 20px;
+  text-align: left;
+  box-shadow: 0 30px 70px -30px rgba(0, 0, 0, 0.85);
+}
+.auth-tabs {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 4px;
+  background: #10141a;
+  border: 1px solid #262a33;
+  border-radius: 9px;
+  padding: 4px;
+  margin-bottom: 20px;
+}
+.auth-tab {
+  background: transparent;
+  border: 0;
+  color: #9aa1ad;
+  font-size: 0.88rem;
+  font-weight: 550;
+  padding: 0.45rem 0.5rem;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: background 0.15s, color 0.15s;
+}
+.auth-tab:hover { color: #e6e8eb; }
+.auth-tab.active {
+  background: rgba(37, 99, 235, 0.18);
+  color: #e6e8eb;
+  box-shadow: inset 0 0 0 1px rgba(37, 99, 235, 0.38);
+}
+.auth-label {
+  display: block;
+  font-size: 0.74rem;
+  letter-spacing: 0.09em;
+  text-transform: uppercase;
+  color: #9aa1ad;
+  margin: 0 0 0.4rem;
+}
+.auth-card input {
+  width: 100%;
+  background: #10141a;
+  border: 1px solid #3a3f4b;
+  border-radius: 8px;
+  padding: 0.68rem 0.8rem;
+  color: #e6e8eb;
+  font-size: 0.95rem;
+  margin-bottom: 15px;
+  transition: border-color 0.15s, box-shadow 0.15s;
+}
+.auth-card input::placeholder { color: #6f7683; }
+.auth-card input:focus {
+  outline: none;
+  border-color: #2563eb;
+  box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.18);
+}
+.auth-error {
+  color: #f87171;
+  font-size: 0.85rem;
+  background: rgba(248, 113, 113, 0.08);
+  border: 1px solid rgba(248, 113, 113, 0.25);
+  border-radius: 8px;
+  padding: 0.5rem 0.65rem;
+  margin: 0 0 12px;
+}
+.auth-submit {
+  width: 100%;
+  background: #2563eb;
+  color: #fff;
+  border: 0;
+  border-radius: 8px;
+  padding: 0.72rem 1rem;
+  font-size: 0.95rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.15s, transform 0.15s;
+}
+.auth-submit:hover:not(:disabled) { background: #1d4ed8; transform: translateY(-1px); }
+.auth-submit:disabled { opacity: 0.6; cursor: default; }
+.auth-switch {
+  text-align: center;
+  color: #6f7683;
+  font-size: 0.85rem;
+  margin: 0.95rem 0 0;
+}
+.auth-switch a, .auth-legal a { color: #7ba6ff; text-decoration: none; }
+.auth-switch a:hover, .auth-legal a:hover { text-decoration: underline; }
+.auth-legal {
+  color: #6f7683;
+  font-size: 0.76rem;
+  line-height: 1.5;
+  max-width: 34em;
+  margin: 1.15rem auto 0;
+}
+@media (max-width: 520px) {
+  .auth-wrap { padding: 32px 16px 48px; }
+  .auth-card { padding: 18px 18px 16px; }
+}
+
+/* topbar brand mark (same spark as the landing page / auth screen) */
+a.brand-link { display: inline-flex; align-items: center; gap: 8px; color: inherit; text-decoration: none; }
+.brand-spark { width: 17px; height: 17px; color: #2563eb; flex: 0 0 auto; }
