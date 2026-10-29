@@ -23,6 +23,10 @@ export default function Auth({ recovery = false, onRecoveryDone }: Props) {
   const [npw2, setNpw2] = useState("");
   const [done, setDone] = useState(false);
 
+  // signup with email verification: no session yet, so tell them what to do next
+  const [sentTo, setSentTo] = useState("");
+  const [resent, setResent] = useState(false);
+
   useEffect(() => {
     if (!recovery) return;
     // the one-time tokens are in the hash; drop them from the address bar once consumed
@@ -34,10 +38,43 @@ export default function Auth({ recovery = false, onRecoveryDone }: Props) {
     setErr(""); setBusy(true);
     const fn = mode === "login"
       ? supabase.auth.signInWithPassword({ email, password })
-      : supabase.auth.signUp({ email, password });
-    const { error } = await fn;
+      : supabase.auth.signUp({
+          email,
+          password,
+          options: { emailRedirectTo: `${window.location.origin}/` },
+        });
+    const { data, error } = await fn;
     setBusy(false);
-    if (error) setErr(error.message);
+    if (error) {
+      // unconfirmed accounts cannot sign in until they click the link
+      if (/email not confirmed/i.test(error.message)) {
+        setSentTo(email.trim());
+        setErr("");
+        return;
+      }
+      // GoTrue throttles repeated auth emails per address (RATE_LIMIT / SMTP_MAX_FREQUENCY)
+      if (/can only request this after/i.test(error.message)) {
+        return setErr("We just sent an email to that address — give it a minute, then try again.");
+      }
+      return setErr(error.message);
+    }
+    if (mode === "signup" && !data.session) {
+      setSentTo(email.trim());
+      setResent(false);
+      return;
+    }
+  };
+
+  const resend = async () => {
+    setBusy(true);
+    const { error } = await supabase.auth.resend({
+      type: "signup",
+      email: sentTo,
+      options: { emailRedirectTo: `${window.location.origin}/` },
+    });
+    setBusy(false);
+    if (error) return setErr(error.message);
+    setResent(true);
   };
 
   const submitRecovery = async (e: React.FormEvent) => {
@@ -123,6 +160,29 @@ export default function Auth({ recovery = false, onRecoveryDone }: Props) {
               </>
             )}
           </form>
+        ) : sentTo ? (
+          <div className="auth-card">
+            <h2 style={{ margin: "0 0 10px", fontSize: "1.05rem", color: "#e8ebef" }}>
+              Confirm your email
+            </h2>
+            <p className="auth-note">
+              We sent a link to <strong style={{ color: "#e8ebef" }}>{sentTo}</strong>. Click it
+              to activate your account, then sign in.
+            </p>
+            <p className="auth-note" style={{ marginTop: "-4px" }}>
+              Nothing after a minute? Check spam, or resend.
+            </p>
+            {resent && <p className="auth-success">Sent again — give it a minute.</p>}
+            {err && <p className="auth-error">{err}</p>}
+            <button className="auth-submit" onClick={resend} disabled={busy}>
+              {busy ? "…" : "Resend email"}
+            </button>
+            <p className="auth-switch">
+              <a href="#" onClick={(e) => { e.preventDefault(); setSentTo(""); setErr(""); }}>
+                Use a different email
+              </a>
+            </p>
+          </div>
         ) : (
           <form className="auth-card" onSubmit={submit}>
             {SIGNUP_ENABLED && (
