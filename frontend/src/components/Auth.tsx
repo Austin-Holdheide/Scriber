@@ -1,6 +1,10 @@
 import { useState } from "react";
 import { supabase } from "../lib/supabase";
 
+// Signup can be closed at the identity provider (GOTRUE_DISABLE_SIGNUP). When it is,
+// offering "create account" only produces a cryptic 422, so the tabs are hidden.
+const SIGNUP_ENABLED = import.meta.env.VITE_SIGNUP_ENABLED !== "false";
+
 export default function Auth() {
   const [mode, setMode] = useState<"login" | "signup">("login");
   const [email, setEmail] = useState("");
@@ -38,6 +42,7 @@ export default function Auth() {
         <p className="auth-tagline">Video in. Searchable transcript out.</p>
 
         <form className="auth-card" onSubmit={submit}>
+          {SIGNUP_ENABLED && (
           <div className="auth-tabs" role="tablist">
             <button
               type="button"
@@ -58,6 +63,7 @@ export default function Auth() {
               Create account
             </button>
           </div>
+          )}
 
           <label className="auth-label" htmlFor="auth-email">Email</label>
           <input
@@ -88,6 +94,7 @@ export default function Auth() {
             {busy ? "…" : mode === "login" ? "Sign in" : "Create account"}
           </button>
 
+          {SIGNUP_ENABLED && (
           <p className="auth-switch">
             {mode === "login" ? "No account yet?" : "Already have an account?"}{" "}
             <a
@@ -97,6 +104,7 @@ export default function Auth() {
               {mode === "login" ? "Create one" : "Sign in"}
             </a>
           </p>
+          )}
         </form>
 
         <p className="auth-legal">
