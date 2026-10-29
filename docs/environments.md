@@ -49,23 +49,26 @@ once: the redesigned login vanished from dev because prod's source had been reve
 compared against prod's and must report `SHARED_WITH_PROD: none`. A dev JWT must not authenticate
 against prod (`db.scribly.cc`) or vice versa.
 
-## Account creation (signups closed, 2026-10-28)
+## Account creation (email-verified signups, 2026-10-29)
 
-Both stacks run `DISABLE_SIGNUP=true`, so `POST /auth/v1/signup` answers
-`422 {"error_code":"signup_disabled"}` and the apps hide their signup affordance via
-`VITE_SIGNUP_ENABLED=false` (baked into each bundle's build env).
+Both stacks accept sign-ups, but an account cannot be used until its address is confirmed:
+`DISABLE_SIGNUP=false`, `ENABLE_EMAIL_SIGNUP=true`, `ENABLE_MAILER_AUTOCONFIRM=false`.
 
-Create accounts with the admin API instead (service key, `email_confirm: true` so no SMTP is needed):
+| Setting | Value |
+|---|---|
+| `DISABLE_SIGNUP` | `false` (open, verified) |
+| `ENABLE_EMAIL_AUTOCONFIRM` | `false` → unconfirmed accounts get `400 Email not confirmed` on login |
+| `GOTRUE_SMTP_MAX_FREQUENCY` | `30s` — one auth email per address per 30s, protects the Resend quota |
+| `MAILER_TEMPLATES_*` | branded HTML fetched over HTTP from `http://192.168.1.202/email/*.html` (repo: `emails/`) |
+| `VITE_SIGNUP_ENABLED` | `true` in both build envs (hides the tabs when set to `false`) |
 
-```bash
-curl -s -X POST http://192.168.1.201:8000/auth/v1/admin/users \
-  -H "apikey: $SERVICE_ROLE_KEY" -H "Authorization: Bearer $SERVICE_ROLE_KEY" \
-  -H 'Content-Type: application/json' \
-  -d '{"email":"person@example.com","password":"...","email_confirm":true}'
-```
+Sign-up flow: form → GoTrue emails the branded confirmation → the app shows a "Confirm your email"
+panel with a Resend action → the link lands on `SITE_URL` and establishes the session.
 
-Re-open signups only after SMTP + email verification exist (F-5): set `DISABLE_SIGNUP=false`,
-`ENABLE_EMAIL_AUTOCONFIRM=false`, and rebuild the frontend with `VITE_SIGNUP_ENABLED=true`.
+Password reset works the same way (branded `recovery.html` → `/choose-a-new-password` card in the app).
+
+To close signups again: `DISABLE_SIGNUP=true` + rebuild the frontend with `VITE_SIGNUP_ENABLED=false`.
+Accounts created another way still work: `POST /auth/v1/admin/users` with `email_confirm: true`.
 
 ## Seeding dev
 

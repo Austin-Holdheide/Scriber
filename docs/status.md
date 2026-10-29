@@ -188,3 +188,13 @@ and roadmap edits are already contained in these commits.
 - **Open signup on prod** — closed 2026-10-28: `DISABLE_SIGNUP=true` on 201, verified `422 signup_disabled`
   from the public API while password login still returns 200. Accounts are now admin-created
   (`auth/v1/admin/users`). Both bundles hide the signup affordance (`VITE_SIGNUP_ENABLED=false`).
+
+## Launch blockers closed
+
+- **Open signup on prod** — closed then re-opened *with verification* (2026-10-29): branded confirmation
+  email via Resend, unconfirmed accounts get `400 Email not confirmed`, 30s per-address send throttle.
+- **Password reset** — branded recovery email plus a "Choose a new password" screen in the app (was: the
+  link logged you in with no way to set a password).
+- **Transactional email** — Resend SMTP on both stacks (`smtp.resend.com:587`), templates served from
+  202 at `/email/*.html`, subjects per type.
+
