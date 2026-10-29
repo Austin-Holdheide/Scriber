@@ -54,7 +54,7 @@ Read this first. It supersedes older plan docs where they disagree.
 ## Open work, in the order I would do it
 
 1. **Email routing is broken** — `hello@scribly.cc` and `privacy@scribly.cc` are printed on the
-   terms/privacy pages but `scriberly.cc`/`scribly.cc` has **no MX** and SPF is `v=spf1 -all`, so mail
+   terms/privacy pages but `scribly.cc` has **no MX** and SPF is `v=spf1 -all`, so mail
    to them is refused. Fix = Cloudflare Email Routing (free): enable it, verify a destination inbox,
    add custom addresses, merge SPF to `v=spf1 include:_spf.mx.cloudflare.net -all`. Needs a Cloudflare
    API token (Zone.DNS edit) to do from the shell, or four dashboard clicks by the user.
