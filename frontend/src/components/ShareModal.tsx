@@ -10,11 +10,23 @@ export default function ShareModal({ videoId, filename, onClose }: { videoId: st
   const [busy, setBusy] = useState(false);
   const [copied, setCopied] = useState("");
   const [err, setErr] = useState("");
+  // share-link lifetime is a plan entitlement; only offer what the server will honour
+  const [maxDays, setMaxDays] = useState<number | null>(null);
 
   const load = () => {
     api(`/videos/${videoId}/shares`).then((r) => r.json()).then(setLinks).catch((e) => setErr(e.message));
   };
   useEffect(load, [videoId]);
+
+  useEffect(() => {
+    api("/me/limits")
+      .then((r) => r.json())
+      .then((d) => {
+        const cap = d?.limits?.share_max_days;
+        if (typeof cap === "number" && cap > 0) setMaxDays(cap);
+      })
+      .catch(() => {});
+  }, []);
 
   const create = async () => {
     setBusy(true); setErr("");
@@ -57,10 +69,17 @@ export default function ShareModal({ videoId, filename, onClose }: { videoId: st
           <label className="muted">expires in</label>
           <select value={days} onChange={(e) => setDays(parseInt(e.target.value))} style={{ width: 90 }}
             className="share-select">
-            {[1, 3, 7, 14, 30].map((d) => <option key={d} value={d}>{d} day{d > 1 ? "s" : ""}</option>)}
+            {[1, 3, 7, 14, 30]
+              .filter((d) => maxDays === null || d <= maxDays)
+              .map((d) => <option key={d} value={d}>{d} day{d > 1 ? "s" : ""}</option>)}
           </select>
           <button disabled={busy} onClick={create}>{busy ? "creating…" : "+ create link"}</button>
         </div>
+        {maxDays !== null && maxDays < 30 && (
+          <p className="muted" style={{ fontSize: "0.78rem", margin: "-0.25rem 0 0.5rem" }}>
+            Links last up to {maxDays} days on your plan. Pro allows 30.
+          </p>
+        )}
         {err && <p className="muted" style={{ color: "#f87171" }}>{err}</p>}
 
         <div style={{ maxHeight: 260, overflowY: "auto" }}>

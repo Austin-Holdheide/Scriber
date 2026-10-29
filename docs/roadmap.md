@@ -18,7 +18,7 @@ Reference IDs: `W16-*` = launch/domain, `F-*` = features, `T-*` = tiers/monetiza
 - **F-4** Watermark toggle for premium
 - **F-5** Email setup: `*@scribly.cc` addresses, SMTP provider, GoTrue verification + password reset (`MAILER_AUTOCONFIRM=false`) — required for T-2 email capture
 - **F-6** Transcode pipeline (NEW, biggest hidden item): ffmpeg CPU jobs for free 240p compression / premium 720p auto-compress; sized ~tens of min CPU per hour of video
-- **F-7** Quota tracking schema: per-user counters (transcriptions/day, diarizations/day, upload bytes) + sliding windows (50 per 12h for premium)
+- **F-7** ~~Quota tracking schema~~ **DONE 2026-10-29** — `public.subscriptions` + `public.usage_events` (append-only log), trigger enrols every new account on free. Premium is **unlimited transcriptions** (fair use), diarization still 10/day. Enforcement lives in `app/services/quota.py`.
 - **F-8** Queue priority: `high`/`low` RQ queue pairs, enqueue by tier
 - **F-9** Auto-delete job: daily sweep, free videos >7 days old; delete segments, thumbs, artifacts; handle in-flight jobs
 - **F-10** Free-tier countdown timer on video page (days until auto-delete)
@@ -32,7 +32,7 @@ Reference IDs: `W16-*` = launch/domain, `F-*` = features, `T-*` = tiers/monetiza
 - **T-2** Email capture gate: free plan = 1 transcription/day, requires verified email (depends F-5)
 - **T-3** `subscriptions` table: user_id, plan, trial_end, current_period_end; enforcement reads it
 - **T-4** Trial: 14-day Stripe-native trial; premium limits during trial? decide
-- **T-5** Free limits: 15 min video length (single limiter — length, not size), 500 MB implicit, 1-day share-link expiry, no diarization, no bulk, low priority, watermark everywhere
+- **T-5** Free limits (as shipped): 15 min per file, 500 MB, 1 transcription/24h, no diarization, 7-day share links, no bulk, low priority. ~~1-day share expiry~~ → 7 days. Watermark not built.
 - **T-6** Premium limits: 5 GB upload (single limiter — size), 30-day share links, no auto-delete, 24 h length, diarization 10/day, bulk upload, high priority, no watermark (toggleable, F-4)
 - **T-7** Marketing consistency: implement premium as 50-per-12h sliding window even if page says "100/day"
 - **T-8** Bulk upload UI (premium only)

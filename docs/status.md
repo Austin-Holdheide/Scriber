@@ -198,3 +198,43 @@ and roadmap edits are already contained in these commits.
 - **Transactional email** — Resend SMTP on both stacks (`smtp.resend.com:587`), templates served from
   202 at `/email/*.html`, subjects per type.
 
+## 2026-10-29 — launch surface, quota, alerts
+
+Everything below was verified live this pass.
+
+### Public surface
+- `https://scribly.cc` — landing with `#pricing` (Free $0 / Pro $9/mo · $90/yr), `#faq`, terms, privacy.
+  CTA is "Start free" → `app.scribly.cc`; "See pricing" → `#pricing`.
+- `https://app.scribly.cc` — signup **open with email verification** (`DISABLE_SIGNUP=false`,
+  `ENABLE_EMAIL_AUTOCONFIRM=false`), branded Resend templates for recovery/confirmation/magic-link/
+  invite/email-change, "Forgot password?" plus a set-a-new-password screen.
+- `https://ntfy.scribly.cc` — ntfy through NPM host 27 (cert npm-60), used for alerts.
+
+### Plans and enforcement
+| | Free | Pro |
+|---|---|---|
+| Transcriptions | 1 per 24 h | unlimited (fair use) |
+| File size / length | 500 MB / 15 min | 5 GB / 24 h |
+| Diarization | not included | 10 per day |
+| Share links | 7 days | 30 days |
+| Files | kept until deleted | kept until deleted |
+
+- `app/services/quota.py` enforces all of it: 429 (allowance), 413 (size), 422 (length via ffprobe),
+  402 (feature locked); rejections leave no file, row, job or usage record.
+- `GET /api/me/limits`, `POST /api/me/plan` (admin only), `GET|POST /api/me/interest` (Pro waitlist).
+- UI: plan line under the drop zone, and a plan-limit notification with "Upgrade to Pro" → `/pro`.
+- **Retention is not automated**: nothing is deleted on a schedule, so no surface promises it. F-9
+  (7-day sweep for free) is still open — and enabling it would delete the existing test library unless
+  grandfathered.
+
+### Alerting
+Grafana (vm106) → webhook → `grafana-ntfy-relay` on 203 → ntfy topic `scriber-alerts` → phone.
+Rule *Node down (scriber-nodes)* (`up{job="scriber-nodes"} < 1`, 1 m) proven by stopping a node:
+FIRING and RESOLVED messages both arrived. Route matcher `team=scriberly`; root receiver still Discord.
+
+### Known gaps
+1. Retention sweep (F-9) not implemented — deliberately, see above.
+2. Fair-use has no meter: `usage_events` counts transcriptions, not audio hours.
+3. `hello@scribly.cc` / `privacy@scribly.cc` (terms + privacy contact) are not real mailboxes yet.
+4. Transcode (F-6), Stripe checkout (T-1), watermark (F-4), bulk upload (F-3/T-8) still open.
+

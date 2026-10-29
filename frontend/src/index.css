@@ -576,3 +576,5 @@ a.brand-link { display: inline-flex; align-items: center; gap: 8px; color: inher
 
 /* the /pro hero is a plain block: the global header rule must not apply */
 .pro-hero { display: block; }
+
+.pro-note { color: #9aa3b0; font-size: 0.84rem; line-height: 1.55; margin: 1.4rem 0 0; max-width: 62ch; }

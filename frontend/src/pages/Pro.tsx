@@ -9,7 +9,6 @@ const ROWS: Array<[string, string, string]> = [
   ["Transcriptions", "1 per day", "Unlimited"],
   ["Speaker diarization", "Not included", "10 per day"],
   ["Share links live for", "7 days", "30 days"],
-  ["Your files are kept for", "7 days", "Until you delete them"],
   ["Bulk upload", "Not included", "Included"],
   ["Queue priority", "Standard", "Priority"],
 ];
@@ -91,6 +90,7 @@ export default function Pro() {
         )}
         {err && <p className="pro-err">{err}</p>}
 
+        <p className="pro-note">Files are never deleted automatically — on any plan, nothing is removed until you delete it.</p>
         <p className="pro-fine">
           Unlimited means fair use: capacity is shared, so automated abuse or reselling it
           gets throttled — see the <a href="https://scribly.cc/terms.html">terms</a>. File
