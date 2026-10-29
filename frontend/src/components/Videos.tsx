@@ -13,6 +13,8 @@ export default function Videos() {
   const [videos, setVideos] = useState<VideoRow[]>([]);
   const [loading, setLoading] = useState(true);
   const [drag, setDrag] = useState(false);
+  // plan + usage, so the page can say what the account may do before it tries
+  const [limits, setLimits] = useState<any>(null);
   const [uploading, setUploading] = useState<{ name: string; pct: number } | null>(null);
   const [err, setErr] = useState("");
   const [pendingDel, setPendingDel] = useState<VideoRow | null>(null);
@@ -79,6 +81,12 @@ export default function Videos() {
       .catch(() => {}); // thumbs are decorative - never block the list on failure
   }, []);
 
+  const loadLimits = useCallback(() => {
+    api("/me/limits").then((r) => r.json()).then(setLimits).catch(() => {});
+  }, []);
+
+  useEffect(() => { loadLimits(); }, [loadLimits]);
+
   // LIVE STATUS: subscribe to jobs table changes (Realtime)
   useEffect(() => {
     const channel = supabase
@@ -110,8 +118,16 @@ export default function Videos() {
         ev.lengthComputable && setUploading({ name: file.name, pct: Math.round((ev.loaded / ev.total) * 100) });
       xhr.onload = () => {
         setUploading(null);
-        if (xhr.status === 201) refresh();
-        else setErr(`upload failed: ${xhr.status} ${xhr.responseText.slice(0, 120)}`);
+        if (xhr.status === 201) { refresh(); loadLimits(); return; }
+        // the API returns {detail: {message, ...}} for quota rejections
+        let msg = `upload failed (${xhr.status})`;
+        try {
+          const body = JSON.parse(xhr.responseText);
+          const d = body?.detail;
+          msg = (typeof d === "string" ? d : d?.message) || msg;
+        } catch { /* non-JSON body: keep the status */ }
+        setErr(msg);
+        loadLimits();
       };
       xhr.onerror = () => { setUploading(null); setErr("network error"); };
       xhr.send(form);
@@ -163,6 +179,24 @@ export default function Videos() {
           accept=".mp4,.mkv,.avi,.mov,.webm,.mp3,.wav,.m4a,.flac,.ogg,.opus"
           onChange={(e) => { upload(e.target.files); e.target.value = ""; }} />
       </div>
+      {limits && (
+        <p className="muted plan-line">
+          {limits.plan === "admin" || limits.limits?.uploads_per_window < 0
+            ? `${limits.plan} plan — no upload or length limits`
+            : `${limits.plan} plan — ${
+                limits.usage?.transcriptions_left ?? "?"
+              } of ${limits.limits.uploads_per_window} left${
+                limits.limits.window_s >= 86400 ? " today" : " this window"
+              }${limits.limits.max_duration_s > 0
+                ? ` · ${limits.limits.max_duration_s < 60
+                      ? `${limits.limits.max_duration_s} s`
+                      : `${Math.round(limits.limits.max_duration_s / 60)} min`} max${
+                    limits.limits.max_upload_bytes
+                      ? ` · ${Math.round(limits.limits.max_upload_bytes / 1048576)} MB max` : ""
+                  }`
+                : ""}`}
+        </p>
+      )}
       {err && <p className="muted" style={{ color: "#f87171" }}>{err}</p>}
       {toast && <div className="toast-banner">{toast}</div>}
 

@@ -5,6 +5,7 @@ from fastapi import APIRouter, Depends, HTTPException
 
 from app.services.supabase_client import admin_client
 from app.services.auth import get_current_user
+from app.services import quota
 
 router = APIRouter()
 
@@ -31,6 +32,9 @@ def diarize(video_id: str, user_id: str = Depends(get_current_user)):
     Labels existing segments in place (segments.speaker), no re-transcription."""
     v = _own_done_video(video_id, user_id)
 
+    # T-5/T-6: diarization is a premium feature with a daily cap
+    quota.check_diarization(user_id)
+
     t = (admin_client().table("transcripts")
          .select("id").eq("video_id", video_id).limit(1).execute())
     if not t.data:
@@ -51,4 +55,5 @@ def diarize(video_id: str, user_id: str = Depends(get_current_user)):
 
     from app.services.queue import enqueue_diarization
     enqueue_diarization(job_id=job_id, video_id=video_id, storage_path=v["storage_path"])
+    quota.record(user_id, "diarization", video_id=video_id)
     return {"job_id": job_id, "queued": "diarization"}

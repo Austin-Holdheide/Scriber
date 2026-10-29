@@ -447,3 +447,9 @@ a.brand-link { display: inline-flex; align-items: center; gap: 8px; color: inher
   line-height: 1.6;
   margin: 0 0 14px;
 }
+
+.plan-line {
+  font-size: 0.82rem;
+  margin: 0.35rem 0 0.9rem;
+  letter-spacing: 0.01em;
+}

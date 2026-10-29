@@ -14,6 +14,7 @@ from fastapi.responses import JSONResponse
 from app.config import settings
 from app.services.supabase_client import admin_client
 from app.services.auth import get_current_user
+from app.services import quota
 
 router = APIRouter()
 
@@ -37,9 +38,9 @@ def _own_video(video_id: str, user_id: str) -> dict:
 def create_share(video_id: str, body: dict | None = None, user_id: str = Depends(get_current_user)):
     """Create an expiring share link. body: {"days": 7} (1..30)."""
     v = _own_video(video_id, user_id)
-    days = DEFAULT_TTL_DAYS
-    if body and isinstance(body.get("days"), int):
-        days = max(1, min(body["days"], MAX_TTL_DAYS))
+    requested = body.get("days") if body and isinstance(body.get("days"), int) else DEFAULT_TTL_DAYS
+    # T-5/T-6: free links live 7 days, premium 30 — clamp whatever was asked for
+    days = min(quota.share_days_for(user_id, requested), MAX_TTL_DAYS)
 
     token = secrets.token_urlsafe(24)
     expires = (datetime.now(timezone.utc) + timedelta(days=days)).isoformat()
