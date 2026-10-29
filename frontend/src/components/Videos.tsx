@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useLocation, useNavigate } from "react-router-dom";
 import { supabase, api } from "../lib/supabase";
 import type { VideoRow } from "../lib/types";
 
@@ -11,6 +11,7 @@ const stageLabel: Record<string, string> = {
 
 export default function Videos() {
   const [videos, setVideos] = useState<VideoRow[]>([]);
+  const [loading, setLoading] = useState(true);
   const [drag, setDrag] = useState(false);
   const [uploading, setUploading] = useState<{ name: string; pct: number } | null>(null);
   const [err, setErr] = useState("");
@@ -25,10 +26,30 @@ export default function Videos() {
     try {
       const res = await api("/videos");
       setVideos(await res.json());
-    } catch (e: any) { setErr(e.message); }
+      setErr("");
+    } catch (e: any) {
+      // keep whatever we already had on screen; a failed refresh must not blank the library
+      setErr(e.message);
+    } finally {
+      setLoading(false);
+    }
   }, []);
 
-  useEffect(() => { refresh(); }, [refresh]);
+  const location = useLocation();
+
+  // refetch on every navigation into this route (Browser Back included) and when the
+  // tab becomes visible again, so a stale/empty list never survives a route change
+  useEffect(() => { refresh(); }, [refresh, location.key]);
+
+  useEffect(() => {
+    const onWake = () => { if (document.visibilityState === "visible") refresh(); };
+    window.addEventListener("focus", onWake);
+    document.addEventListener("visibilitychange", onWake);
+    return () => {
+      window.removeEventListener("focus", onWake);
+      document.removeEventListener("visibilitychange", onWake);
+    };
+  }, [refresh]);
 
   // toast banner after redirect from video page (retranscribe/deleted)
   useEffect(() => {
@@ -168,7 +189,12 @@ export default function Videos() {
           <button className="ghost del" title="delete" onClick={(e) => { e.stopPropagation(); setPendingDel(v); }}>✕</button>
         </div>
       ))}
-      {videos.length === 0 && <p className="muted" style={{ textAlign: "center" }}>no videos yet — drop one above</p>}
+      {loading && videos.length === 0 && (
+        <p className="muted" style={{ textAlign: "center" }}>loading…</p>
+      )}
+      {!loading && videos.length === 0 && (
+        <p className="muted" style={{ textAlign: "center" }}>no videos yet — drop one above</p>
+      )}
 
       {pendingDel && (
         <div className="modal-backdrop" onClick={() => !deleting && setPendingDel(null)}>
