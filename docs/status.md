@@ -182,3 +182,9 @@ Push with `/root/push_scribly.sh` after placing a PAT in `/root/.github-token`. 
 2 commits ahead of origin (`57b4cd9`, `ec167d4`); once this is pushed, back those up
 (`git branch backup-local-main`), then `git fetch origin && git reset --hard origin/main` — the fold fix
 and roadmap edits are already contained in these commits.
+
+## Launch blockers closed
+
+- **Open signup on prod** — closed 2026-10-28: `DISABLE_SIGNUP=true` on 201, verified `422 signup_disabled`
+  from the public API while password login still returns 200. Accounts are now admin-created
+  (`auth/v1/admin/users`). Both bundles hide the signup affordance (`VITE_SIGNUP_ENABLED=false`).

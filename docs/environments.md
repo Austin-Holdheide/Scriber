@@ -22,6 +22,24 @@ else — no database, no Redis, no media directory, no JWT keys, no frontend bun
 compared against prod's and must report `SHARED_WITH_PROD: none`. A dev JWT must not authenticate
 against prod (`db.scribly.cc`) or vice versa.
 
+## Account creation (signups closed, 2026-10-28)
+
+Both stacks run `DISABLE_SIGNUP=true`, so `POST /auth/v1/signup` answers
+`422 {"error_code":"signup_disabled"}` and the apps hide their signup affordance via
+`VITE_SIGNUP_ENABLED=false` (baked into each bundle's build env).
+
+Create accounts with the admin API instead (service key, `email_confirm: true` so no SMTP is needed):
+
+```bash
+curl -s -X POST http://192.168.1.201:8000/auth/v1/admin/users \
+  -H "apikey: $SERVICE_ROLE_KEY" -H "Authorization: Bearer $SERVICE_ROLE_KEY" \
+  -H 'Content-Type: application/json' \
+  -d '{"email":"person@example.com","password":"...","email_confirm":true}'
+```
+
+Re-open signups only after SMTP + email verification exist (F-5): set `DISABLE_SIGNUP=false`,
+`ENABLE_EMAIL_AUTOCONFIRM=false`, and rebuild the frontend with `VITE_SIGNUP_ENABLED=true`.
+
 ## Seeding dev
 
 Dev was initialised by restoring the **nightly prod `pg_dump`** (`/mnt/media/pg/scribly-<date>.sql.gz`)
