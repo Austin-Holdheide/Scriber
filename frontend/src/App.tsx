@@ -10,14 +10,35 @@ import VideoPage from "./pages/VideoPage";
 
 export default function App() {
   const [session, setSession] = useState<boolean | null>(null);
+  // password-reset links land here with a one-time token in the hash; until the user
+  // picks a new password we must NOT treat them as normally signed in
+  const [recovering, setRecovering] = useState<boolean>(
+    typeof window !== "undefined" && window.location.hash.includes("type=recovery"),
+  );
   const { q } = useGlobalSearch();
   const searching = q.trim() !== "";
 
   useEffect(() => {
     supabase.auth.getSession().then(({ data }) => setSession(!!data.session));
-    const { data: sub } = supabase.auth.onAuthStateChange((_e, s) => setSession(!!s));
+    const { data: sub } = supabase.auth.onAuthStateChange((event, s) => {
+      if (event === "PASSWORD_RECOVERY") setRecovering(true);
+      setSession(!!s);
+    });
     return () => sub.subscription.unsubscribe();
   }, []);
+
+  if (recovering) {
+    return (
+      <div className="app-shell auth-mode">
+        <header className="topbar">
+          <div className="topbar-inner">
+            <h1><Link to="/" className="brand-link"><svg className="brand-spark" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 2.5c.5 4.6 2.4 6.9 9 9.5-6.6 2.6-8.5 4.9-9 9.5-.5-4.6-2.4-6.9-9-9.5 6.6-2.6 8.5-4.9 9-9.5Z" fill="currentColor" /></svg>Scribly</Link></h1>
+          </div>
+        </header>
+        <Auth recovery onRecoveryDone={() => setRecovering(false)} />
+      </div>
+    );
+  }
 
   if (session === null) return <div className="container muted">loading…</div>;
 
