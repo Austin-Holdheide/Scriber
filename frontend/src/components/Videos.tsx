@@ -186,20 +186,26 @@ export default function Videos() {
       </div>
       {limits && (
         <p className="muted plan-line">
-          {limits.plan === "admin" || limits.limits?.uploads_per_window < 0
-            ? `${limits.plan} plan — no upload or length limits`
-            : `${limits.plan} plan — ${
-                limits.usage?.transcriptions_left ?? "?"
-              } of ${limits.limits.uploads_per_window} left${
-                limits.limits.window_s >= 86400 ? " today" : " this window"
-              }${limits.limits.max_duration_s > 0
-                ? ` · ${limits.limits.max_duration_s < 60
-                      ? `${limits.limits.max_duration_s} s`
-                      : `${Math.round(limits.limits.max_duration_s / 60)} min`} max${
-                    limits.limits.max_upload_bytes
-                      ? ` · ${Math.round(limits.limits.max_upload_bytes / 1048576)} MB max` : ""
-                  }`
-                : ""}`}
+          {(() => {
+            const l = limits.limits || {};
+            const u = limits.usage || {};
+            const bits: string[] = [];
+            if ((l.uploads_per_window ?? 0) < 0) {
+              bits.push("unlimited transcriptions");
+            } else {
+              const win = (l.window_s ?? 0) >= 86400 ? "today" : "this window";
+              bits.push(`${u.transcriptions_left ?? "?"} of ${l.uploads_per_window} left ${win}`);
+            }
+            if (l.max_duration_s > 0) {
+              bits.push(l.max_duration_s < 60
+                ? `${l.max_duration_s} s max`
+                : `${Math.round(l.max_duration_s / 60)} min max`);
+            }
+            if (l.max_upload_bytes > 0) {
+              bits.push(`${Math.round(l.max_upload_bytes / 1048576)} MB max`);
+            }
+            return `${limits.plan} plan — ${bits.join(" · ")}`;
+          })()}
         </p>
       )}
       {err && <p className="muted" style={{ color: "#f87171" }}>{err}</p>}

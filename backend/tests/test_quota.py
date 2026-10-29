@@ -35,8 +35,8 @@ def test_free_plan_shape_matches_the_plan_doc():
 def test_premium_plan_shape_matches_the_plan_doc():
     pro = quota.PLANS["premium"]
     assert pro.max_upload_bytes == 5 * 1024 * quota.MB
-    assert pro.uploads_per_window == 50
-    assert pro.window_s == 12 * 3600
+    assert pro.uploads_per_window == quota.UNLIMITED    # advertised as unlimited
+    assert pro.diarizations_per_day == 10               # ...but diarization stays capped
     assert pro.diarizations_per_day == 10
     assert pro.share_max_days == 30
     assert pro.retention_days == 0
@@ -64,14 +64,15 @@ def test_free_blocks_the_second_upload_with_429(monkeypatch):
     assert "message" in d
 
 
-def test_premium_fifty_per_twelve_hours(monkeypatch):
+def test_premium_transcriptions_are_unlimited(monkeypatch):
+    """Pro advertises unlimited uploads: any number of past uploads must not block one."""
     monkeypatch.setattr(quota, "plan_name_for", lambda _uid: "premium")
-    monkeypatch.setattr(quota, "used", lambda uid, kind, window_s, **_k: 49 if window_s == 12 * 3600 else 0)
-    assert quota.check_transcription("u1").name == "premium"  # 49 used, one left
+    monkeypatch.setattr(quota, "used", lambda *_a, **_k: 10_000)
+    assert quota.check_transcription("u1").name == "premium"
 
-    monkeypatch.setattr(quota, "used", lambda *_a, **_k: 50)
+    # ...while diarization keeps its daily cap
     with pytest.raises(HTTPException) as e:
-        quota.check_transcription("u1")
+        quota.check_diarization("u1")
     assert e.value.status_code == 429
 
 

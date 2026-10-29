@@ -65,8 +65,11 @@ PLANS: dict[str, Plan] = {
         name="premium",
         max_upload_bytes=_env_int("QUOTA_PREMIUM_MAX_UPLOAD_MB", 5 * 1024) * MB,
         max_duration_s=_env_int("QUOTA_PREMIUM_MAX_DURATION_S", 24 * 3600),
-        uploads_per_window=_env_int("QUOTA_PREMIUM_UPLOADS", 50),
-        window_s=_env_int("QUOTA_PREMIUM_WINDOW_S", 12 * 3600),
+        # Pro advertises unlimited transcriptions; the fair-use clause in the terms
+        # is the ceiling, not a counter. Set QUOTA_PREMIUM_UPLOADS to a number to
+        # reintroduce a hard cap without touching code.
+        uploads_per_window=_env_int("QUOTA_PREMIUM_UPLOADS", UNLIMITED),
+        window_s=0,
         diarizations_per_day=_env_int("QUOTA_PREMIUM_DIARIZATIONS", 10),
         share_max_days=30,
         retention_days=0,

@@ -6,7 +6,7 @@ import { api } from "../lib/supabase";
 const ROWS: Array<[string, string, string]> = [
   ["File size", "500 MB", "5 GB"],
   ["Length per file", "15 min", "24 hours"],
-  ["Transcriptions", "1 per day", "50 per 12 hours"],
+  ["Transcriptions", "1 per day", "Unlimited"],
   ["Speaker diarization", "Not included", "10 per day"],
   ["Share links live for", "7 days", "30 days"],
   ["Your files are kept for", "7 days", "Until you delete them"],
@@ -92,8 +92,9 @@ export default function Pro() {
         {err && <p className="pro-err">{err}</p>}
 
         <p className="pro-fine">
-          Your plan limits are enforced per account, so nothing here is a surprise later —
-          the app tells you before it refuses anything.
+          Unlimited means fair use: capacity is shared, so automated abuse or reselling it
+          gets throttled — see the <a href="https://scribly.cc/terms.html">terms</a>. File
+          size and length limits still apply, and the app always says so before it refuses anything.
         </p>
       </section>
     </div>
