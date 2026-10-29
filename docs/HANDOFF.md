@@ -63,8 +63,13 @@ Read this first. It supersedes older plan docs where they disagree.
    date, dry-run first, and artifact/media cleanup mirroring `videos_delete.py`.
 3. **Hour-based metering** — fair use is policy only; `usage_events` counts transcriptions, not audio
    hours. Add duration to the log and sum it for reporting/throttling.
-4. **Rest of the alert rules** — API down, queue depth > 5 for 10 m, worker heartbeat missing, failed
-   jobs, disk > 80 %, wedged GPU. Same folder (`scriberly`), same route (`team=scriberly`), same topic.
+4. ~~**Rest of the alert rules**~~ — **done 2026-10-29.** Nine more rules in folder `scriberly`, group
+   `scribers-app` (API down, worker not running, worker restart loop, queue > 5 for 10 m, new failed
+   jobs, disk > 80 %, GPU wedged, GPU temp, exporter down). Defined as code in
+   `ops/grafana-alerts/` — edit the JSON and re-run `apply_rules.py`, don't click. Proven by stopping
+   `app-exporter` on 202: FIRING + RESOLVED both delivered. Caveat: worker health is *unit-level*
+   (`node_systemd_unit_state`), not RQ-level — a live unit holding a stale `rq:worker:` key is only
+   caught while systemd retries.
 5. **Stripe (T-1)** — checkout + webhook writing `subscriptions`; `pro_interest` rows are the warm list.
 6. Then product depth: transcode (F-6), burn-in render (F-1), subtitle editing (F-2), watermark (F-4),
    bulk upload (F-3/T-8).
