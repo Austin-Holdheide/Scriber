@@ -6,6 +6,7 @@ from fastapi.middleware.cors import CORSMiddleware
 
 from app.config import settings
 from app.routers import health, search, segments, transcripts, videos
+from app.routers import videos_chunked
 from app.routers import videos_delete, videos_ops, videos_thumb, shares, videos_ops_v2
 from app.routers import speakers_rename, me
 from app.routers.videos_list import router as videos_list_router
@@ -23,6 +24,7 @@ app.add_middleware(
 )
 
 app.include_router(videos.router, prefix="/api/videos", tags=["videos"])
+app.include_router(videos_chunked.router, prefix="/api/videos", tags=["videos"])
 app.include_router(videos_thumb.router, prefix="/api/videos", tags=["videos"])
 app.include_router(videos_delete.router, prefix="/api/videos", tags=["videos"])
 app.include_router(videos_list_router, prefix="/api/videos", tags=["videos"])
