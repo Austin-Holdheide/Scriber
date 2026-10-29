@@ -2,6 +2,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import { supabase, api } from "../lib/supabase";
 import QuotaNotice, { type QuotaDetail } from "./QuotaNotice";
+import { uploadVideoChunked, UploadError } from "../lib/upload";
 import type { VideoRow } from "../lib/types";
 
 const stageLabel: Record<string, string> = {
@@ -110,32 +111,24 @@ export default function Videos() {
     const file = files?.[0];
     if (!file) return;
     setErr("");
-    const xhr = new XMLHttpRequest();
-    const form = new FormData();
-    form.append("file", file);
-    supabase.auth.getSession().then(({ data }) => {
-      xhr.open("POST", "/api/videos/upload");
-      xhr.setRequestHeader("Authorization", `Bearer ${data.session?.access_token}`);
-      xhr.upload.onprogress = (ev) =>
-        ev.lengthComputable && setUploading({ name: file.name, pct: Math.round((ev.loaded / ev.total) * 100) });
-      xhr.onload = () => {
+    supabase.auth.getSession().then(async ({ data }) => {
+      const token = data.session?.access_token;
+      if (!token) { setErr("not signed in"); return; }
+      setUploading({ name: file.name, pct: 0 });
+      try {
+        // chunked: Cloudflare refuses a single body over 100 MB, and a Pro upload
+        // can be 5 GB, so the file goes up in parts the proxy will accept
+        await uploadVideoChunked(file, token, (pct) => setUploading({ name: file.name, pct }));
         setUploading(null);
-        if (xhr.status === 201) { refresh(); loadLimits(); return; }
-        // plan limits get a notification, everything else stays an inline error
-        let msg = `upload failed (${xhr.status})`;
-        let detail: QuotaDetail | null = null;
-        try {
-          const body = JSON.parse(xhr.responseText);
-          const d = body?.detail;
-          if (d && typeof d === "object" && d.error) detail = d;
-          msg = (typeof d === "string" ? d : d?.message) || msg;
-        } catch { /* non-JSON body: keep the status */ }
-        if (detail) { setQuotaNotice(detail); setErr(""); }
-        else setErr(msg);
+        refresh();
         loadLimits();
-      };
-      xhr.onerror = () => { setUploading(null); setErr("network error"); };
-      xhr.send(form);
+      } catch (e: any) {
+        setUploading(null);
+        // plan limits get a notification, everything else stays an inline error
+        if (e instanceof UploadError && e.detail) { setQuotaNotice(e.detail); setErr(""); }
+        else setErr(e?.message || "upload failed");
+        loadLimits();
+      }
     });
   };
 

@@ -71,6 +71,20 @@ Read this first. It supersedes older plan docs where they disagree.
 
 ## Traps already hit (do not rediscover)
 
+- **Cloudflare refuses a single request body over 100 MB** on Free/Pro (Business 200 MB, Enterprise up to
+  5 GB self-serve). Every plan cap above that — free 500 MB, Pro 5 GB — is unreachable through the
+  orange-clouded hostname, and the 413 comes from the edge, so nothing appears in the NPM access log or
+  the API journal. Uploads now go up in 64 MiB parts (`/api/videos/upload/init|part|complete`); small
+  clients can still use the single-shot `POST /api/videos/upload`.
+- **`request.stream()` is an async iterator.** A sync `for chunk in chunks` over it raises
+  `TypeError: 'async_generator' object is not iterable` and returns a bare 500. `uploads.append_part` is
+  async and adapts both shapes.
+- **Never interpolate an id you have not asserted into `rm -rf`.** A cleanup line written as
+  `rm -rf /mnt/media/videos/$USER_ID` with an empty `$USER_ID` (because the user-create call above it
+  failed) expands to `rm -rf /mnt/media/videos/` and deletes the whole library. Assert non-empty first.
+  This happened on dev 2026-10-29: CT 206's `/neoDATA/dev/media/videos` was wiped (18 rows, 3.8 GB,
+  unrecoverable — `neoDATA/dev` has no snapshots; only `neoDATA/media` does). Prod media was untouched.
+
 - Stopping a worker CT faster than RQ's worker TTL leaves `rq:worker:scriber-worker-<ct>` in Redis and
   the service crash-loops with `There exists an active worker named …`. `redis-cli del` it on 203.
 - ntfy routes are **topic-prefixed**: `POST /<topic>`, `/<topic>/json?poll=1`, `/<topic>/sse`.
