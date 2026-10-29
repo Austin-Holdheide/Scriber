@@ -51,6 +51,17 @@ Read this first. It supersedes older plan docs where they disagree.
   *Node down (scriber-nodes)* proven by stopping a node (FIRING + RESOLVED both delivered).
   ntfy is public at `https://ntfy.scribly.cc` (NPM host 27, cert npm-60).
 
+- **Chunked uploads (2026-10-29, prod)**: files go up in 64 MiB parts
+  (`POST /api/videos/upload/init`, `PUT .../part/{n}`, `GET .../{id}`, `POST .../complete`,
+  `DELETE .../{id}`), because Cloudflare refuses a single body over 100 MB on Free/Pro. Small clients can
+  still use the single-shot `POST /api/videos/upload`. Staging lives at `<media_root>/uploads/<user>/<id>/`
+  and is swept after 24 h. **Provisioning requirement:** the staging dir must exist and be owned by host
+  uid 100000 — `/neoDATA/media` itself is host-root owned, so the unprivileged CT cannot create
+  `uploads/` and every `init` returns 500 with `PermissionError: '/mnt/media/uploads'`. Done by hand on
+  prod 2026-10-29; any media rebuild must redo `mkdir -p /neoDATA/media/uploads && chown 100000:100000`.
+  Proven in prod with a throwaway account: init 201, part 200, complete 201, `duration_s=5.0`,
+  byte-identical on disk, staging empty, then deleted (20 rows / 102 files / 4.0 G unchanged).
+
 ## Open work, in the order I would do it
 
 1. **Email routing is broken** — `hello@scribly.cc` and `privacy@scribly.cc` are printed on the
