@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import { supabase, api } from "../lib/supabase";
+import QuotaNotice, { type QuotaDetail } from "./QuotaNotice";
 import type { VideoRow } from "../lib/types";
 
 const stageLabel: Record<string, string> = {
@@ -15,6 +16,7 @@ export default function Videos() {
   const [drag, setDrag] = useState(false);
   // plan + usage, so the page can say what the account may do before it tries
   const [limits, setLimits] = useState<any>(null);
+  const [quotaNotice, setQuotaNotice] = useState<QuotaDetail | null>(null);
   const [uploading, setUploading] = useState<{ name: string; pct: number } | null>(null);
   const [err, setErr] = useState("");
   const [pendingDel, setPendingDel] = useState<VideoRow | null>(null);
@@ -119,14 +121,17 @@ export default function Videos() {
       xhr.onload = () => {
         setUploading(null);
         if (xhr.status === 201) { refresh(); loadLimits(); return; }
-        // the API returns {detail: {message, ...}} for quota rejections
+        // plan limits get a notification, everything else stays an inline error
         let msg = `upload failed (${xhr.status})`;
+        let detail: QuotaDetail | null = null;
         try {
           const body = JSON.parse(xhr.responseText);
           const d = body?.detail;
+          if (d && typeof d === "object" && d.error) detail = d;
           msg = (typeof d === "string" ? d : d?.message) || msg;
         } catch { /* non-JSON body: keep the status */ }
-        setErr(msg);
+        if (detail) { setQuotaNotice(detail); setErr(""); }
+        else setErr(msg);
         loadLimits();
       };
       xhr.onerror = () => { setUploading(null); setErr("network error"); };
@@ -199,6 +204,7 @@ export default function Videos() {
       )}
       {err && <p className="muted" style={{ color: "#f87171" }}>{err}</p>}
       {toast && <div className="toast-banner">{toast}</div>}
+      <QuotaNotice detail={quotaNotice} onClose={() => setQuotaNotice(null)} />
 
       {videos.map((v) => (
         <div key={v.id} className="card video-row" style={{ cursor: "pointer" }}

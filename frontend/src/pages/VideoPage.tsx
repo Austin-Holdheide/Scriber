@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Link, useNavigate, useParams, useSearchParams } from "react-router-dom";
 import { api, supabase } from "../lib/supabase";
+import QuotaNotice, { type QuotaDetail } from "../components/QuotaNotice";
 import ShareModal from "../components/ShareModal";
 import SpeakerRename from "../components/SpeakerRename";
 import { copyText } from "../lib/clipboard";
@@ -38,6 +39,7 @@ export default function VideoPage() {
   const [menuOpen, setMenuOpen] = useState(false);
   const [deleting, setDeleting] = useState(false);
   const [toast, setToast] = useState<string | null>(null);
+  const [quotaNotice, setQuotaNotice] = useState<QuotaDetail | null>(null);
   const [confirmWhat, setConfirmWhat] = useState<"delete" | "retranscribe" | "diarize" | null>(null);
   const [copied, setCopied] = useState(false);
   const [matchesJustCleared, setMatchesJustCleared] = useState<number | null>(null);
@@ -233,7 +235,8 @@ export default function VideoPage() {
       }
       loadJob();
     } catch (e: any) {
-      setError(e.message);
+      if (e?.detail?.error) setQuotaNotice(e.detail as QuotaDetail);
+      else setError(e.message);
     } finally {
       setJobBusy(false);
     }
@@ -353,6 +356,7 @@ export default function VideoPage() {
       )}
       {error && <p className="muted" style={{ color: "#f87171" }}>{error}</p>}
       {toast && <div className="toast-banner">{toast}</div>}
+      <QuotaNotice detail={quotaNotice} onClose={() => setQuotaNotice(null)} />
 
       <div className="player-grid">
         <div className="media-pane">

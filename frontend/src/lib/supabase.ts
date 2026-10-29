@@ -42,7 +42,14 @@ export const api = async (path: string, init: RequestInit = {}) => {
     const msg = typeof d === "string" ? d
       : Array.isArray(d) ? d.map((x: any) => x.msg || x.message).join("; ")
       : (d?.message || d?.msg || JSON.stringify(body));
-    throw new Error(msg || `${res.status} ${res.statusText}`);
+    // Keep the structured detail: callers distinguish plan limits (detail.error)
+    // from ordinary failures and show a proper notification for the former.
+    const err = new Error(msg || `${res.status} ${res.statusText}`) as Error & {
+      detail?: unknown; status?: number;
+    };
+    if (d && typeof d === "object") err.detail = d;
+    err.status = res.status;
+    throw err;
   }
   return res;
 };

@@ -453,3 +453,54 @@ a.brand-link { display: inline-flex; align-items: center; gap: 8px; color: inher
   margin: 0.35rem 0 0.9rem;
   letter-spacing: 0.01em;
 }
+
+/* ---- plan-limit notification (quota_exceeded / feature_locked / too big / too long) ---- */
+.quota-pop {
+  position: fixed;
+  right: 20px;
+  bottom: 20px;
+  z-index: 60;
+  display: flex;
+  gap: 12px;
+  align-items: flex-start;
+  width: min(420px, calc(100vw - 40px));
+  padding: 14px 16px;
+  background: #1a1113;
+  border: 1px solid rgba(248, 113, 113, 0.45);
+  border-left: 3px solid #f87171;
+  border-radius: 10px;
+  box-shadow: 0 18px 40px rgba(0, 0, 0, 0.55);
+  animation: quotaPop 0.22s ease-out;
+}
+@keyframes quotaPop { from { opacity: 0; transform: translateY(10px) scale(0.98); } to { opacity: 1; transform: none; } }
+.quota-pop-icon { color: #f87171; flex: 0 0 auto; margin-top: 2px; }
+.quota-pop-body { flex: 1 1 auto; min-width: 0; }
+.quota-pop-title {
+  margin: 0 0 4px;
+  font-size: 0.95rem;
+  font-weight: 600;
+  color: #fca5a5;
+  letter-spacing: 0.01em;
+}
+.quota-pop-msg { margin: 0; font-size: 0.88rem; line-height: 1.45; color: #e8ebef; }
+.quota-pop-hint {
+  margin: 6px 0 0;
+  font-size: 0.78rem;
+  color: #9aa3b0;
+  text-transform: none;
+  letter-spacing: 0.02em;
+}
+.quota-pop-close {
+  flex: 0 0 auto;
+  background: none;
+  border: 0;
+  color: #9aa3b0;
+  font-size: 1.15rem;
+  line-height: 1;
+  padding: 0 2px;
+  cursor: pointer;
+}
+.quota-pop-close:hover { color: #e8ebef; }
+@media (max-width: 560px) {
+  .quota-pop { right: 12px; left: 12px; bottom: 12px; width: auto; }
+}
