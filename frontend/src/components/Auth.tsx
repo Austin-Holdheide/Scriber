@@ -1,6 +1,10 @@
 import { useState } from "react";
 import { supabase } from "../lib/supabase";
 
+// Signup can be closed at the identity provider (GOTRUE_DISABLE_SIGNUP). When it is,
+// offering a "create account" affordance only produces a cryptic 422, so hide it.
+const SIGNUP_ENABLED = import.meta.env.VITE_SIGNUP_ENABLED !== "false";
+
 export default function Auth() {
   const [mode, setMode] = useState<"login" | "signup">("login");
   const [email, setEmail] = useState("");
@@ -36,11 +40,13 @@ export default function Auth() {
       <button disabled={busy} style={{ width: "100%" }}>
         {busy ? "…" : mode === "login" ? "Sign in" : "Sign up"}
       </button>
-      <p className="muted" style={{ textAlign: "center" }}>
-        <a href="#" onClick={(e) => { e.preventDefault(); setMode(mode === "login" ? "signup" : "login"); setErr(""); }}>
-          {mode === "login" ? "no account? sign up" : "have an account? sign in"}
-        </a>
-      </p>
+      {SIGNUP_ENABLED && (
+        <p className="muted" style={{ textAlign: "center" }}>
+          <a href="#" onClick={(e) => { e.preventDefault(); setMode(mode === "login" ? "signup" : "login"); setErr(""); }}>
+            {mode === "login" ? "no account? sign up" : "have an account? sign in"}
+          </a>
+        </p>
+      )}
     </form>
   );
 }
