@@ -1,0 +1,62 @@
+<!doctype html>
+<html>
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<meta name="color-scheme" content="dark" />
+<title>Confirm your Scribly email</title>
+</head>
+<body style="margin:0;padding:0;background-color:#0b0d11;">
+  <div style="display:none;max-height:0;overflow:hidden;opacity:0;">Your Scribly sign-in link — expires in 60 minutes.</div>
+  <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="background-color:#0b0d11;padding:32px 12px;">
+    <tr>
+      <td align="center">
+        <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="max-width:520px;background-color:#141821;border:1px solid #242a35;border-radius:14px;">
+          <tr>
+            <td style="padding:32px 32px 8px 32px;font-family:-apple-system,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;">
+              <div style="font-size:18px;font-weight:700;letter-spacing:0.3px;color:#e8ebef;">
+                <span style="color:#2f6bf0;">&#10022;</span>&nbsp;Scribly
+              </div>
+            </td>
+          </tr>
+          <tr>
+            <td style="padding:8px 32px 0 32px;font-family:-apple-system,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;">
+              <h1 style="margin:14px 0 12px;font-size:22px;line-height:1.3;color:#e8ebef;font-weight:650;">Sign in to Scribly</h1>
+              <p style="margin:0 0 22px;font-size:15px;line-height:1.6;color:#9aa3b0;">
+                Tap the button below to sign in as <span style="color:#e8ebef;">{{ .Email }}</span>. No password needed.
+              </p>
+            </td>
+          </tr>
+          <tr>
+            <td style="padding:0 32px 6px 32px;">
+              <a href="{{ .ConfirmationURL }}"
+                 style="display:inline-block;background-color:#2f6bf0;color:#ffffff;text-decoration:none;font-family:-apple-system,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;font-size:15px;font-weight:600;padding:13px 22px;border-radius:9px;">
+                Sign me in
+              </a>
+            </td>
+          </tr>
+          <tr>
+            <td style="padding:18px 32px 0 32px;font-family:-apple-system,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;">
+              <p style="margin:0;font-size:13px;line-height:1.6;color:#6f7784;">
+                The link expires in 60 minutes and works once.
+                If the button does not work, paste this into your browser:
+              </p>
+              <p style="margin:8px 0 0;font-size:12px;line-height:1.6;word-break:break-all;color:#7ba6ff;">{{ .ConfirmationURL }}</p>
+            </td>
+          </tr>
+          <tr>
+            <td style="padding:26px 32px 30px 32px;font-family:-apple-system,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;border-top:1px solid #1e232d;">
+              <p style="margin:26px 0 0;font-size:12px;line-height:1.6;color:#5f6773;">
+                Did not try to sign in? Ignore this email — nothing changes.
+              </p>
+              <p style="margin:10px 0 0;font-size:12px;color:#5f6773;">
+                <a href="https://scribly.cc" style="color:#8f98a6;text-decoration:none;">scribly.cc</a>
+              </p>
+            </td>
+          </tr>
+        </table>
+      </td>
+    </tr>
+  </table>
+</body>
+</html>

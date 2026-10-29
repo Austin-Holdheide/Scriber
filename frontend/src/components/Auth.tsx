@@ -1,16 +1,33 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { supabase } from "../lib/supabase";
 
 // Signup can be closed at the identity provider (GOTRUE_DISABLE_SIGNUP). When it is,
 // offering "create account" only produces a cryptic 422, so the tabs are hidden.
 const SIGNUP_ENABLED = import.meta.env.VITE_SIGNUP_ENABLED !== "false";
 
-export default function Auth() {
+type Props = {
+  /** arrived from a password-reset email: show "choose a new password" instead of sign in */
+  recovery?: boolean;
+  onRecoveryDone?: () => void;
+};
+
+export default function Auth({ recovery = false, onRecoveryDone }: Props) {
   const [mode, setMode] = useState<"login" | "signup">("login");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [err, setErr] = useState("");
   const [busy, setBusy] = useState(false);
+
+  // recovery mode state
+  const [npw, setNpw] = useState("");
+  const [npw2, setNpw2] = useState("");
+  const [done, setDone] = useState(false);
+
+  useEffect(() => {
+    if (!recovery) return;
+    // the one-time tokens are in the hash; drop them from the address bar once consumed
+    if (window.location.hash) window.history.replaceState(null, "", window.location.pathname);
+  }, [recovery]);
 
   const submit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -21,6 +38,31 @@ export default function Auth() {
     const { error } = await fn;
     setBusy(false);
     if (error) setErr(error.message);
+  };
+
+  const submitRecovery = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setErr("");
+    if (npw.length < 6) return setErr("Password must be at least 6 characters.");
+    if (npw !== npw2) return setErr("The two passwords do not match.");
+    setBusy(true);
+    const { error } = await supabase.auth.updateUser({ password: npw });
+    setBusy(false);
+    if (error) return setErr(error.message);
+    setDone(true);
+    setTimeout(() => onRecoveryDone?.(), 900);
+  };
+
+  const forgot = async () => {
+    setErr("");
+    const addr = email.trim();
+    if (!addr) return setErr("Enter your email above first, then click “Forgot password?”.");
+    setBusy(true);
+    const { error } = await supabase.auth.resetPasswordForEmail(addr, {
+      redirectTo: `${window.location.origin}/`,
+    });
+    setBusy(false);
+    setErr(error ? error.message : "If that address has an account, a reset link is on its way.");
   };
 
   const switchMode = (m: "login" | "signup") => { setMode(m); setErr(""); };
@@ -39,73 +81,119 @@ export default function Auth() {
           </svg>
           Scribly
         </a>
-        <p className="auth-tagline">Video in. Searchable transcript out.</p>
+        <p className="auth-tagline">
+          {recovery ? "Choose a new password for your account" : "Video in. Searchable transcript out."}
+        </p>
 
-        <form className="auth-card" onSubmit={submit}>
-          {SIGNUP_ENABLED && (
-          <div className="auth-tabs" role="tablist">
-            <button
-              type="button"
-              role="tab"
-              aria-selected={mode === "login"}
-              className={mode === "login" ? "auth-tab active" : "auth-tab"}
-              onClick={() => switchMode("login")}
-            >
-              Sign in
+        {recovery ? (
+          <form className="auth-card" onSubmit={submitRecovery}>
+            {done ? (
+              <p className="auth-success">Password updated. Taking you in…</p>
+            ) : (
+              <>
+                <label className="auth-label" htmlFor="auth-newpw">New password</label>
+                <input
+                  id="auth-newpw"
+                  type="password"
+                  placeholder="at least 6 characters"
+                  minLength={6}
+                  value={npw}
+                  required
+                  autoComplete="new-password"
+                  onChange={(e) => setNpw(e.target.value)}
+                />
+
+                <label className="auth-label" htmlFor="auth-newpw2">Confirm new password</label>
+                <input
+                  id="auth-newpw2"
+                  type="password"
+                  placeholder="type it again"
+                  minLength={6}
+                  value={npw2}
+                  required
+                  autoComplete="new-password"
+                  onChange={(e) => setNpw2(e.target.value)}
+                />
+
+                {err && <p className="auth-error">{err}</p>}
+
+                <button className="auth-submit" disabled={busy}>
+                  {busy ? "…" : "Set new password"}
+                </button>
+              </>
+            )}
+          </form>
+        ) : (
+          <form className="auth-card" onSubmit={submit}>
+            {SIGNUP_ENABLED && (
+            <div className="auth-tabs" role="tablist">
+              <button
+                type="button"
+                role="tab"
+                aria-selected={mode === "login"}
+                className={mode === "login" ? "auth-tab active" : "auth-tab"}
+                onClick={() => switchMode("login")}
+              >
+                Sign in
+              </button>
+              <button
+                type="button"
+                role="tab"
+                aria-selected={mode === "signup"}
+                className={mode === "signup" ? "auth-tab active" : "auth-tab"}
+                onClick={() => switchMode("signup")}
+              >
+                Create account
+              </button>
+            </div>
+            )}
+
+            <label className="auth-label" htmlFor="auth-email">Email</label>
+            <input
+              id="auth-email"
+              type="email"
+              placeholder="you@example.com"
+              value={email}
+              required
+              autoComplete="email"
+              onChange={(e) => setEmail(e.target.value)}
+            />
+
+            <label className="auth-label" htmlFor="auth-password">Password</label>
+            <input
+              id="auth-password"
+              type="password"
+              placeholder={mode === "signup" ? "at least 6 characters" : "your password"}
+              minLength={6}
+              value={password}
+              required
+              autoComplete={mode === "login" ? "current-password" : "new-password"}
+              onChange={(e) => setPassword(e.target.value)}
+            />
+
+            {err && <p className="auth-error">{err}</p>}
+
+            <button className="auth-submit" disabled={busy}>
+              {busy ? "…" : mode === "login" ? "Sign in" : "Create account"}
             </button>
-            <button
-              type="button"
-              role="tab"
-              aria-selected={mode === "signup"}
-              className={mode === "signup" ? "auth-tab active" : "auth-tab"}
-              onClick={() => switchMode("signup")}
-            >
-              Create account
-            </button>
-          </div>
-          )}
 
-          <label className="auth-label" htmlFor="auth-email">Email</label>
-          <input
-            id="auth-email"
-            type="email"
-            placeholder="you@example.com"
-            value={email}
-            required
-            autoComplete="email"
-            onChange={(e) => setEmail(e.target.value)}
-          />
+            {SIGNUP_ENABLED && (
+            <p className="auth-switch">
+              {mode === "login" ? "No account yet?" : "Already have an account?"}{" "}
+              <a
+                href="#"
+                onClick={(e) => { e.preventDefault(); switchMode(mode === "login" ? "signup" : "login"); }}
+              >
+                {mode === "login" ? "Create one" : "Sign in"}
+              </a>
+            </p>
+            )}
 
-          <label className="auth-label" htmlFor="auth-password">Password</label>
-          <input
-            id="auth-password"
-            type="password"
-            placeholder={mode === "signup" ? "at least 6 characters" : "your password"}
-            minLength={6}
-            value={password}
-            required
-            autoComplete={mode === "login" ? "current-password" : "new-password"}
-            onChange={(e) => setPassword(e.target.value)}
-          />
-
-          {err && <p className="auth-error">{err}</p>}
-
-          <button className="auth-submit" disabled={busy}>
-            {busy ? "…" : mode === "login" ? "Sign in" : "Create account"}
-          </button>
-
-          {SIGNUP_ENABLED && (
-          <p className="auth-switch">
-            {mode === "login" ? "No account yet?" : "Already have an account?"}{" "}
-            <a
-              href="#"
-              onClick={(e) => { e.preventDefault(); switchMode(mode === "login" ? "signup" : "login"); }}
-            >
-              {mode === "login" ? "Create one" : "Sign in"}
-            </a>
-          </p>
-          )}
-        </form>
+            <p className="auth-switch">
+              <a href="#" onClick={(e) => { e.preventDefault(); forgot(); }}>Forgot password?</a>
+            </p>
+          </form>
+        )}
 
         <p className="auth-legal">
           By continuing you agree to the <a href="https://scribly.cc/terms.html">terms</a> and{" "}
