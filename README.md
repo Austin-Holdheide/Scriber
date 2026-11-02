@@ -4,7 +4,8 @@
 
 **Scribly** (formerly Scriber) — hosted video transcription app with a free tier and a Pro plan. App at **https://app.scribly.cc** (marketing site at https://scribly.cc, LAN: http://192.168.1.202). Upload a video/audio file → faster-whisper ASR on 2× Tesla P4 (Proxmox LXCs) → searchable, editable, exportable, shareable transcripts.
 
-**Status: v0.7.x — W1–W12 + W10 complete, plus a dev/prod split and a self-contained storage layer.**
+**Status: v0.8.0 — public at app.scribly.cc with accounts, plans and enforced quotas, a marketing site,
+chunked uploads and phone alerting. See [CHANGELOG.md](CHANGELOG.md).**
 
 Shipped: full web app with global hybrid search, expiring share links, PDF export, push notifications,
 thumbnails and **speaker diarization** (chunked + globally re-clustered, validated to 3h42m / 416MB);
