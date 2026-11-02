@@ -185,6 +185,18 @@ async def append_part(user_id: str, upload_id: str, index: int, chunks) -> dict:
 
     got = received_bytes(user_id, upload_id)
     expect = got // ps
+    # A part that died mid-transfer left a partial tail in data.bin. Drop it before
+    # accepting the retry, otherwise the resent part is appended a second time and the
+    # file ends up larger than the size declared at init.
+    if got % ps:
+        try:
+            os.truncate(_data_path(d), expect * ps)
+        except OSError:
+            log.exception("could not drop the partial tail of %s", upload_id)
+            raise HTTPException(500, "storage write failed")
+        log.info("discarded %d stray bytes from %s (part %d retried)", got % ps, upload_id, expect)
+        got = expect * ps
+
     if index != expect:
         # out of order or a duplicate retry: tell the client where to resume
         raise HTTPException(409, {
