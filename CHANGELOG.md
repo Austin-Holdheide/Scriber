@@ -2,6 +2,16 @@
 
 Releases before v0.8.0 exist as git tags only. Dates are the tag date.
 
+## Unreleased
+
+### Fixed
+
+- Chunked upload resume no longer duplicates a part. `next_index` is `received // part_size`, but an
+  interrupted part has already appended its bytes, so the client's retry of that part was appended a
+  second time; the file then exceeded the size declared at init and was refused at `complete` (409
+  `incomplete`) instead of resuming. `append_part` now truncates `data.bin` back to the last complete
+  part boundary before accepting a retry.
+
 ## v0.8.0 — 2026-11-02
 
 The release where Scribly became a product rather than a personal tool: a public name and domain,
