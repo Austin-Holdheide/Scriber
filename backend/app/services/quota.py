@@ -94,11 +94,37 @@ DEFAULT_PLAN = "free"
 
 # ---------------------------------------------------------------- plan lookup
 
+def in_billing_grace(row: dict) -> bool:
+    """True while a `past_due` subscription is still inside the grace window.
+
+    A card that expired this morning should not lock someone out of a project
+    mid-way. They keep the plan for BILLING_GRACE_DAYS after the failed payment;
+    after that the plan lapses (loudly - Stripe is already dunning them).
+    """
+    from app.config import settings
+
+    days = settings.billing_grace_days
+    if days <= 0:
+        return False
+    # Anchor on the paid period, not updated_at: a trigger rewrites updated_at on
+    # every UPDATE, so using it would let any unrelated touch reset the clock.
+    stamp = row.get("current_period_end") or row.get("updated_at")
+    if not stamp:
+        return True          # unknown age: err toward the customer who is paying
+    try:
+        when = datetime.fromisoformat(str(stamp).replace("Z", "+00:00"))
+    except ValueError:
+        return True
+    if when.tzinfo is None:
+        when = when.replace(tzinfo=timezone.utc)
+    return (datetime.now(timezone.utc) - when).days < days
+
+
 def plan_name_for(user_id: str) -> str:
     """The account's plan, tolerating a missing row or an unreachable database."""
     try:
         r = (admin_client().table("subscriptions")
-             .select("plan,status").eq("user_id", user_id).limit(1).execute())
+             .select("plan,status,updated_at,current_period_end").eq("user_id", user_id).limit(1).execute())
     except Exception:
         log.exception("subscription lookup failed for %s; falling back to free", user_id)
         return DEFAULT_PLAN
@@ -106,7 +132,12 @@ def plan_name_for(user_id: str) -> str:
         return DEFAULT_PLAN
     row = r.data[0]
     # a canceled or unpaid subscription does not keep premium entitlements
-    if row.get("status") in ("canceled", "past_due"):
+    # canceled: Pro ends immediately. past_due: a failed charge keeps the plan for
+    # the grace window, then lapses until payment succeeds.
+    status = row.get("status")
+    if status == "canceled":
+        return DEFAULT_PLAN
+    if status == "past_due" and not in_billing_grace(row):
         return DEFAULT_PLAN
     return row.get("plan") or DEFAULT_PLAN
 

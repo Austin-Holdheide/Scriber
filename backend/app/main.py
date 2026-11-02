@@ -5,6 +5,7 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
 from app.config import settings
+from app.routers import billing
 from app.routers import health, search, segments, transcripts, videos
 from app.routers import videos_chunked
 from app.routers import videos_delete, videos_ops, videos_thumb, shares, videos_ops_v2
@@ -35,5 +36,6 @@ app.include_router(speakers_rename.router, prefix="/api/videos", tags=["videos"]
 app.include_router(transcripts.router, prefix="/api/videos", tags=["transcripts"])
 app.include_router(segments.router, prefix="/api/segments", tags=["segments"])
 app.include_router(search.router, prefix="/api/search", tags=["search"])
+app.include_router(billing.router, prefix="/api/billing", tags=["billing"])
 app.include_router(me.router, prefix="/api/me", tags=["account"])
 app.include_router(health.router, prefix="/api", tags=["health"])
