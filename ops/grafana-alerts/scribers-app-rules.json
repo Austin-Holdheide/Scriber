@@ -1,0 +1,83 @@
+[
+  {
+    "title": "API down (transcriber-api)",
+    "expr": "node_systemd_unit_state{job=\"scriber-nodes\",name=\"transcriber-api.service\",state=\"active\"}",
+    "threshold": {"type": "lt", "param": 1},
+    "for": "2m",
+    "severity": "critical",
+    "summary": "transcriber-api is not active on {{ $labels.instance }}",
+    "description": "The FastAPI service on {{ $labels.instance }} has not been in the active state for 2 minutes. Check `systemctl status transcriber-api` and `journalctl -u transcriber-api -n 50` inside the container. Frontend requests will fail with 502 through Caddy."
+  },
+  {
+    "title": "Worker not running (rq-worker)",
+    "expr": "node_systemd_unit_state{job=\"scriber-nodes\",name=~\"rq-worker@20[345].service\",state=\"active\"}",
+    "threshold": {"type": "lt", "param": 1},
+    "for": "5m",
+    "severity": "critical",
+    "summary": "{{ $labels.name }} is not active on {{ $labels.instance }}",
+    "description": "An RQ worker unit has not been active for 5 minutes, so queued videos will not be transcribed. Check `systemctl status {{ $labels.name }}` on {{ $labels.instance }}. If it is crash-looping with 'There exists an active worker named ...', delete rq:worker:scriber-worker-<ct> and its rq:workers entry in redis on 203 first."
+  },
+  {
+    "title": "Worker restart loop (rq-worker)",
+    "expr": "changes(node_systemd_unit_state{job=\"scriber-nodes\",name=~\"rq-worker@20[345].service\",state=\"active\"}[20m])",
+    "threshold": {"type": "gt", "param": 2},
+    "for": "5m",
+    "severity": "warning",
+    "summary": "{{ $labels.name }} is flapping on {{ $labels.instance }}",
+    "description": "The active state of {{ $labels.name }} changed more than twice in 20 minutes. This is the shape of the stale RQ registration crash-loop: the unit starts, RQ refuses the name, systemd restarts it. Check redis for rq:worker:scriber-worker-<ct>."
+  },
+  {
+    "title": "Queue backlog (scriber-queue)",
+    "expr": "sum(scriber_queue_depth)",
+    "threshold": {"type": "gt", "param": 5},
+    "for": "10m",
+    "severity": "warning",
+    "summary": "{{ $value }} jobs waiting across RQ queues",
+    "description": "More than 5 uploads have been queued for 10 minutes. Either the GPU workers are down, slower than arrival, or one long file is blocking. Check `redis-cli llen rq:queue:transcribe-gpu` on 203 and worker state on 204/205."
+  },
+  {
+    "title": "Failed transcriptions (scriber-jobs)",
+    "expr": "delta(scriber_videos_status{status=\"failed\"}[30m])",
+    "threshold": {"type": "gt", "param": 0},
+    "for": "5m",
+    "severity": "warning",
+    "summary": "{{ $value }} new failed transcription(s) in the last 30 minutes",
+    "description": "One or more videos moved into the failed state. Inspect `select id, filename, created_at from public.videos where status='failed' order by created_at desc` and the worker journal for the traceback."
+  },
+  {
+    "title": "Disk usage high (scriber-nodes)",
+    "expr": "max by (instance) (100 * (1 - (node_filesystem_avail_bytes{job=\"scriber-nodes\",fstype=\"ext4\",mountpoint=\"/\"} / node_filesystem_size_bytes{job=\"scriber-nodes\",fstype=\"ext4\",mountpoint=\"/\"})))",
+    "threshold": {"type": "gt", "param": 80},
+    "for": "10m",
+    "severity": "warning",
+    "summary": "Root filesystem on {{ $labels.instance }} is {{ printf \"%.1f\" $value }}% full",
+    "description": "The container rootfs (backed by neoDATA) has been above 80% for 10 minutes. Uploads, media and the prod Supabase volumes share this pool. Prune old media under /mnt/media/videos/<user_uuid> or grow the dataset before ZFS hits 85%."
+  },
+  {
+    "title": "GPU wedged (scriber-gpu)",
+    "expr": "nvidia_memory_used_mib / nvidia_memory_total_mib and nvidia_utilization_percent < 1",
+    "threshold": {"type": "gt", "param": 0.9},
+    "for": "20m",
+    "severity": "critical",
+    "summary": "GPU on {{ $labels.instance }} holds {{ printf \"%.0f\" $value }}% of its memory with no compute",
+    "description": "A Tesla P4 has held over 90% of its VRAM with under 1% utilisation for 20 minutes: a worker process is stuck or leaked and new jobs will fail to allocate. Restart rq-worker@<ct> on {{ $labels.instance }}; if memory does not drop, kill the python process holding the context."
+  },
+  {
+    "title": "GPU temperature high (scriber-gpu)",
+    "expr": "nvidia_temperature_celsius",
+    "threshold": {"type": "gt", "param": 85},
+    "for": "5m",
+    "severity": "warning",
+    "summary": "GPU on {{ $labels.instance }} at {{ $value }}C",
+    "description": "Sustained temperature above 85C. Check airflow and fan speed in the R630; a Pascal P4 throttles above ~90C and transcription times climb."
+  },
+  {
+    "title": "Metrics exporter down (scriber-exporters)",
+    "expr": "up{job=~\"scriber-app|scriber-gpu\"}",
+    "threshold": {"type": "lt", "param": 1},
+    "for": "10m",
+    "severity": "warning",
+    "summary": "{{ $labels.job }} exporter on {{ $labels.instance }} is not scrapable",
+    "description": "The {{ $labels.job }} exporter at {{ $labels.instance }} has been unreachable for 10 minutes, so queue/failure/GPU rules are blind. Check `systemctl status app-exporter` (202) or `gpu-exporter` (204/205)."
+  }
+]
