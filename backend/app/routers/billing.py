@@ -76,6 +76,29 @@ def _user_for_customer(customer_id: str | None) -> str | None:
         return None
 
 
+@router.get("/status")
+def billing_status(user_id: str = Depends(get_current_user)):
+    """What the UI needs to decide between "buy Pro" and "Pro isn't open yet".
+
+    Kept separate from /me/limits so the pricing page can render honestly even
+    before Stripe keys exist in an environment (prod today).
+    """
+    row = _sub_row(user_id)
+    plan = row.get("plan") or "free"
+    return {
+        "enabled": stripe_api.enabled(),
+        "plan": plan,
+        "status": row.get("status") or "active",
+        "is_pro": plan in ("premium", "admin"),
+        "has_customer": bool(row.get("stripe_customer_id")),
+        "prices": {
+            "monthly": bool(settings.stripe_price_monthly),
+            "annual": bool(settings.stripe_price_annual),
+        },
+        "grace_days": settings.billing_grace_days,
+    }
+
+
 # ------------------------------------------------------------------ checkout
 
 @router.post("/checkout")

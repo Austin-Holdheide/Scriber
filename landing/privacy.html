@@ -18,6 +18,9 @@
   p, li { color:#c6ccd4; }
   ul { padding-left:20px; }
   .note { background:var(--panel); border:1px solid var(--line); border-left:2px solid var(--accent); border-radius:8px; padding:14px 16px; color:var(--muted); font-size:.9rem; }
+  table { width:100%; border-collapse:collapse; margin:10px 0 4px; font-size:.92rem; }
+  th, td { text-align:left; padding:8px 10px; border-bottom:1px solid var(--line); vertical-align:top; }
+  th { color:var(--muted); font-weight:600; }
   footer { border-top:1px solid var(--line); margin-top:44px; padding-top:18px; color:#6f7683; font-size:.85rem; }
 </style>
 </head>
@@ -26,33 +29,85 @@
   <a class="brand" href="/"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 2.5c.5 4.6 2.4 6.9 9 9.5-6.6 2.6-8.5 4.9-9 9.5-.5-4.6-2.4-6.9-9-9.5 6.6-2.6 8.5-4.9 9-9.5Z" fill="currentColor"/></svg>Scribly</a>
 
   <h1>Privacy</h1>
-  <p class="updated">Draft — last updated 29 October 2026</p>
+  <p class="updated">Last updated 2 November 2026</p>
 
-  <p class="note">This is a short, plain-language draft for the early-access period. It will be replaced by a reviewed policy before public launch.</p>
+  <p class="note">Scribly is a small independent service, not an advertising business. Your recordings
+  are not used to train anything, are not sent to a third-party transcription or AI provider, and are
+  never sold or shared for marketing.</p>
+
+  <h2>Who is responsible</h2>
+  <p>Scribly is operated by an individual developer in the United States, who is the data controller for
+  the information described here. Questions, requests and complaints:
+  <a href="mailto:privacy@scribly.cc">privacy@scribly.cc</a>.</p>
 
   <h2>What we store</h2>
   <ul>
-    <li>Your account email address and a password hash (we never store your password itself).</li>
-    <li>The video or audio files you upload, plus the transcripts, speaker labels and export files generated from them.</li>
-    <li>Basic operational records: when a job ran, how long it took, and any error it produced.</li>
+    <li><strong>Account:</strong> your email address, a password hash (never the password itself), and
+    whether the address has been confirmed.</li>
+    <li><strong>Your files:</strong> the video or audio you upload, and the transcripts, speaker labels,
+    thumbnails and export files generated from them.</li>
+    <li><strong>Operational records:</strong> when a job ran, how long it took, its status, errors, and
+    the allowance it used from your plan.</li>
+    <li><strong>Billing:</strong> your plan, subscription status, renewal date, and identifiers for your
+    Stripe customer and subscription. Card numbers never reach Scribly.</li>
   </ul>
 
+  <h2>Payments</h2>
+  <p>Pro is paid for through <strong>Stripe</strong>. You enter card details on Stripe's own page, so we
+  never see or store a card number, CVC or full billing address. Stripe sends us the customer and
+  subscription identifiers, the plan, the status and the renewal date, and it emails your receipts.
+  Stripe processes payment data as our processor; their handling is described in Stripe's own privacy
+  policy. If you want to know exactly which payment details exist, ask us and we will tell you what our
+  records show.</p>
+
+  <h2>Who else touches it</h2>
+  <table>
+    <thead><tr><th>Provider</th><th>What for</th><th>Data involved</th></tr></thead>
+    <tbody>
+      <tr><td>Stripe</td><td>Payments, invoices, billing portal</td><td>Email, card details (held by Stripe), subscription records</td></tr>
+      <tr><td>Cloudflare</td><td>DNS, TLS and traffic in front of the site; email routing for our printed addresses</td><td>Request metadata (IP, user agent, URLs)</td></tr>
+      <tr><td>Resend</td><td>Transactional email: verification, password reset, receipts notices</td><td>Email address and the message content</td></tr>
+    </tbody>
+  </table>
+  <p>Everything else — the database, the media files, the transcription workers and the push
+  notification server — runs on hardware we operate ourselves. Your recordings are not uploaded to any
+  third-party transcription or AI service.</p>
+
   <h2>Where it is stored</h2>
-  <p>Scribly runs on privately operated hardware. Your files stay on that server and its backups; they are not sent to a third-party transcription or AI service.</p>
+  <p>On privately operated servers and their backups. Cloudflare and Stripe are based in the United
+  States, so some metadata and payment records are processed there. If you are in the EU or UK, that
+  transfer relies on the providers' standard contractual clauses.</p>
 
   <h2>How long we keep it</h2>
-  <p>Files stay until you delete them. Deleting a video removes the media, its transcript, exports and share links. Backups roll off automatically within a few weeks. Free-tier accounts may be subject to an automatic retention window once paid plans launch; that limit will be stated clearly before it applies.</p>
+  <p>Your files stay until you delete them — <strong>nothing is deleted automatically today</strong>, on
+  any plan. Deleting a video removes the media, its transcript, exports and share links. Backups roll off
+  automatically within a few weeks. If an automatic retention window is ever introduced for the Free
+  plan, it will be stated here and in the app before it applies, and it will not apply retrospectively
+  to files already stored.</p>
+  <p>Billing records are kept for as long as tax and accounting rules require, even after you delete
+  your account.</p>
 
-  <h2>Sharing</h2>
-  <p>Share links are unlisted: anyone with a link can view that transcript and play the media. Revoking or deleting the link stops access immediately. We do not publish, index or resell your content.</p>
+  <h2>Cookies and local storage</h2>
+  <p>No advertising or analytics trackers are embedded in the app or on this site. The app stores your
+  login session in your browser's local storage so you stay signed in, and nothing else.</p>
 
-  <h2>Analytics</h2>
-  <p>No third-party analytics or advertising trackers are embedded in the app or on this site.</p>
+  <h2>Security</h2>
+  <p>Traffic is encrypted in transit. Access to the servers is restricted to the operator, media files are
+  served through signed, expiring links rather than open paths, and share links can be revoked or set to
+  expire. No system is perfect; if you find a problem, please report it to
+  <a href="mailto:hello@scribly.cc">hello@scribly.cc</a>.</p>
 
   <h2>Your choices</h2>
-  <p>You can delete any video or your account at any time. To request an export or full deletion, email <a href="mailto:privacy@scribly.cc">privacy@scribly.cc</a>.</p>
+  <p>You can delete any video, revoke any share link, or delete your account at any time. You can also
+  ask for a copy of your data, ask us to correct it, or object to a particular use. Write to
+  <a href="mailto:privacy@scribly.cc">privacy@scribly.cc</a> and you will get an answer within 30 days.
+  If you are in the EU or UK you also have the right to complain to your local data protection authority.</p>
 
-  <footer><a href="/">Back to scribly.cc</a> · &copy; 2026 Scribly</footer>
+  <h2>Changes</h2>
+  <p>If this notice changes materially, the date at the top changes and account holders are told by email
+  before the change takes effect.</p>
+
+  <footer><a href="/">Back to scribly.cc</a> · <a href="/terms.html">Terms</a> · &copy; 2026 Scribly</footer>
 </div>
 </body>
 </html>

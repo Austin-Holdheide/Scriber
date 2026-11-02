@@ -18,6 +18,9 @@
   p, li { color:#c6ccd4; }
   ul { padding-left:20px; }
   .note { background:var(--panel); border:1px solid var(--line); border-left:2px solid var(--accent); border-radius:8px; padding:14px 16px; color:var(--muted); font-size:.9rem; }
+  table { width:100%; border-collapse:collapse; margin:10px 0 4px; font-size:.92rem; }
+  th, td { text-align:left; padding:8px 10px; border-bottom:1px solid var(--line); }
+  th { color:var(--muted); font-weight:600; }
   footer { border-top:1px solid var(--line); margin-top:44px; padding-top:18px; color:#6f7683; font-size:.85rem; }
 </style>
 </head>
@@ -26,21 +29,62 @@
   <a class="brand" href="/"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 2.5c.5 4.6 2.4 6.9 9 9.5-6.6 2.6-8.5 4.9-9 9.5-.5-4.6-2.4-6.9-9-9.5 6.6-2.6 8.5-4.9 9-9.5Z" fill="currentColor"/></svg>Scribly</a>
 
   <h1>Terms of use</h1>
-  <p class="updated">Draft — last updated 29 October 2026</p>
+  <p class="updated">Last updated 2 November 2026</p>
 
-  <p class="note">Short draft for the early-access period. It will be replaced by reviewed terms before paid plans go live.</p>
+  <p class="note">Scribly is operated as a small independent service. These terms are written to be read,
+  not to hide anything: if something here is unclear, ask and it will be fixed.</p>
 
   <h2>The service</h2>
-  <p>Scribly converts video and audio you upload into transcripts, speaker labels, searchable text and downloadable export files. The service is provided as-is during early access and may change or be interrupted.</p>
+  <p>Scribly converts video and audio you upload into transcripts, speaker labels, searchable text and
+  downloadable export files. The service may change as it develops, and parts of it may occasionally be
+  interrupted for maintenance.</p>
 
   <h2>Plans and limits</h2>
-  <p>Free accounts are limited to short files and a small daily allowance; Pro lifts the file size,
-  length and transcription limits. The current numbers are published on the pricing page and enforced
-  in the app, which tells you before it refuses anything. Limits may change as the service develops;
-  material changes will be announced before they take effect.</p>
+  <p>Two plans are offered. The numbers below are the ones the service actually enforces, and the app
+  tells you which limit you have reached before it refuses anything.</p>
+  <table>
+    <thead><tr><th>Limit</th><th>Free</th><th>Pro</th></tr></thead>
+    <tbody>
+      <tr><td>File size</td><td>500 MB</td><td>5 GB</td></tr>
+      <tr><td>Length per file</td><td>15 minutes</td><td>24 hours</td></tr>
+      <tr><td>Transcriptions</td><td>1 per 24 hours</td><td>Unlimited, fair use</td></tr>
+      <tr><td>Speaker labels</td><td>Not included</td><td>10 files per day</td></tr>
+      <tr><td>Share links last</td><td>7 days</td><td>30 days</td></tr>
+    </tbody>
+  </table>
+  <p>Limits may change as the service develops. Material changes are announced on this page and in the app
+  before they take effect, and never apply retroactively to work already in progress.</p>
+
+  <h2>Prices and payment</h2>
+  <p>Pro costs <strong>$9 per month</strong> or <strong>$90 per year</strong>, in US dollars, charged in
+  advance. Payments are processed by Stripe; Scribly never receives or stores your card details. The
+  subscription renews automatically at the end of each period until you cancel it.</p>
+  <p>Where sales tax or VAT applies to your purchase, it is added at checkout and shown before you pay.
+  Price changes take effect at your next renewal, and you will be told before a change applies to you.</p>
+
+  <h2>Cancelling</h2>
+  <p>You can cancel at any time from the billing portal in the app, or by replying to any receipt. When
+  you cancel, Pro stays active until the end of the period you have already paid for, and then the
+  account returns to the Free plan. Nothing is deleted when a plan ends: your videos and transcripts
+  stay where they are until you delete them yourself.</p>
+
+  <h2>Refunds</h2>
+  <p>Cancelling stops future payments but does not refund the period already paid for. If something has
+  genuinely gone wrong — you were charged twice, the service was unusable, or you subscribed by mistake
+  and have not used the account — email
+  <a href="mailto:hello@scribly.cc">hello@scribly.cc</a> within 14 days of the charge and it will be
+  refunded. Refunds are returned to the original payment method.</p>
+
+  <h2>Failed payments</h2>
+  <p>If a payment fails, Stripe retries it and we email you. Pro continues for 7 days after the failed
+  payment so that a card that expired overnight does not lock you out mid-project. If payment has not
+  succeeded by then, the account returns to the Free plan and is upgraded again as soon as payment
+  succeeds.</p>
 
   <h2>Your content</h2>
-  <p>You keep ownership of everything you upload. You grant us only the permission needed to store, process and serve it back to you — nothing more. Do not upload material you do not have the right to process, or content that is unlawful.</p>
+  <p>You keep ownership of everything you upload. You grant us only the permission needed to store,
+  process and serve it back to you — nothing more. Do not upload material you do not have the right to
+  process, or content that is unlawful.</p>
 
   <h2>Fair use</h2>
   <p>Processing runs on limited hardware that is shared between accounts. Where a plan is described as
@@ -52,16 +96,23 @@
   to slow down or move to a different arrangement.</p>
 
   <h2>Accuracy</h2>
-  <p>Transcription is automatic and will contain mistakes, particularly with accents, overlapping speech and technical vocabulary. Check important passages before relying on a transcript as a record.</p>
+  <p>Transcription is automatic and will contain mistakes, particularly with accents, overlapping speech
+  and technical vocabulary. Check important passages before relying on a transcript as a record.</p>
 
   <h2>Availability and liability</h2>
-  <p>No uptime guarantee is offered during early access. To the extent permitted by law, we are not liable for indirect or consequential losses arising from use of the service. Keep your own copy of any original recording you care about.</p>
+  <p>No uptime guarantee is offered. To the extent permitted by law, we are not liable for indirect or
+  consequential losses arising from use of the service. Keep your own copy of any original recording you
+  care about.</p>
 
   <h2>Changes</h2>
-  <p>These terms may be updated as the product develops; material changes will be noted on this page with a new date.</p>
+  <p>These terms may be updated as the product develops; material changes will be noted on this page with
+  a new date. If a change is significant, account holders are told by email before it takes effect.</p>
 
   <h2>Contact</h2>
-  <p><a href="mailto:hello@scribly.cc">hello@scribly.cc</a></p>
+  <p>Anything about these terms, billing or your account:
+  <a href="mailto:hello@scribly.cc">hello@scribly.cc</a>.
+  For personal data, see the <a href="/privacy.html">privacy notice</a> or write to
+  <a href="mailto:privacy@scribly.cc">privacy@scribly.cc</a>.</p>
 
   <footer><a href="/">Back to scribly.cc</a> · &copy; 2026 Scribly</footer>
 </div>

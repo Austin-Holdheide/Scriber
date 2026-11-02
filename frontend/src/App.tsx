@@ -6,6 +6,7 @@ import Auth from "./components/Auth";
 import Videos from "./components/Videos";
 import SearchPage from "./pages/SearchPage";
 import Pro from "./pages/Pro";
+import BillingSuccess from "./pages/BillingSuccess";
 import SharePage from "./pages/SharePage";
 import VideoPage from "./pages/VideoPage";
 
@@ -63,6 +64,7 @@ export default function App() {
           <Route path="/videos/:videoId" element={session ? <VideoPage /> : <Auth />} />
           <Route path="/search" element={session ? <SearchPage /> : <Auth />} />
           <Route path="/pro" element={session ? <Pro /> : <Auth />} />
+          <Route path="/billing/success" element={session ? <BillingSuccess /> : <Auth />} />
         </RR_Routes>
       )}
     </div>
