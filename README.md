@@ -1,5 +1,7 @@
 # Scribly
 
+![The Scribly landing page: "Video in. Searchable transcript out." with a live transcript mockup showing speaker labels and a search for "refund"](docs/images/hero.png)
+
 **Scribly** (formerly Scriber) — hosted video transcription app with a free tier and a Pro plan. App at **https://app.scribly.cc** (marketing site at https://scribly.cc, LAN: http://192.168.1.202). Upload a video/audio file → faster-whisper ASR on 2× Tesla P4 (Proxmox LXCs) → searchable, editable, exportable, shareable transcripts.
 
 **Status: v0.7.x — W1–W12 + W10 complete, plus a dev/prod split and a self-contained storage layer.**
@@ -9,10 +11,24 @@ thumbnails and **speaker diarization** (chunked + globally re-clustered, validat
 media now lives on a local ZFS dataset with snapshots, a nightly DB dump and a weekly off-box copy (no
 network filesystem in the hot path); a second **dev environment** (own Supabase, own keys, own media)
 lives beside production; and the marketing site for `scribly.cc` ships from this repo (`landing/`).
-Remaining: hostnames/TLS for `app.scribly.cc`, the dev-first migration discipline, transcode pipeline and
-account tiers, v1.0.0 (see `docs/roadmap.md`).
+Remaining: Stripe checkout for Pro, the transcode pipeline (F-6), subtitle editing, and v1.0.0 (see
+`docs/roadmap.md`).
 
 Public surfaces: **https://app.scribly.cc** (app) and **https://scribly.cc** (landing page), with Supabase's API gateway exposed separately at **https://db.scribly.cc** (API prefixes only — the studio/dashboard is blocked at the proxy). The old `pocscribly.holdheide.com` name is retired.
+
+## Screenshots
+
+**Pricing, published from the same plan table the API enforces.** Every number on this page is generated from
+`backend/app/services/quota.py` — the free tier's limits, the Pro caps, and the "coming soon" state beside
+the $9/month · $90/year price.
+
+![Pricing section: Free at $0 and Pro at $9 per month or $90 a year, marked coming soon](docs/images/pricing.png)
+
+**Search inside a transcript, no account needed.** A shared link is read-only but complete: synced playback,
+click a line to seek, every match highlighted, and speaker labels carried through from the diarization pass.
+This is a real share page served by the app.
+
+![Search for "DNA" in a shared transcript: highlighted matches, timestamps and Speaker 1 / Speaker 2 labels](docs/images/transcript-search.png)
 
 ## Features
 
