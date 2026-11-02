@@ -101,6 +101,36 @@ def test_append_consumes_an_async_stream():
     assert uploads.received_bytes("u1", uid) == ps
 
 
+def test_append_discards_a_partial_tail_before_retrying():
+    """A part that died mid-transfer must not be appended twice on retry."""
+    ps = uploads.part_size()
+    uid = uploads.create_session("u1", "talk.mp4", 2 * ps, _plan())["upload_id"]
+    _append("u1", uid, 0, [b"a" * ps])
+
+    data = uploads.session_dir("u1", uid) / "data.bin"
+    with open(data, "ab") as fh:          # simulate the interrupted part 1
+        fh.write(b"z" * (ps // 2))
+    assert uploads.received_bytes("u1", uid) == ps + ps // 2
+
+    r = _append("u1", uid, 1, [b"b" * ps])   # client retries part 1 in full
+    assert r["received_bytes"] == 2 * ps
+    assert data.read_bytes() == b"a" * ps + b"b" * ps
+
+
+def test_complete_after_a_retried_part_is_the_declared_size():
+    ps = uploads.part_size()
+    uid = uploads.create_session("u1", "talk.mp4", 2 * ps, _plan())["upload_id"]
+    _append("u1", uid, 0, [b"a" * ps])
+    data = uploads.session_dir("u1", uid) / "data.bin"
+    with open(data, "ab") as fh:
+        fh.write(b"z" * 7)
+    _append("u1", uid, 1, [b"b" * ps])
+
+    dest, info = uploads.complete_session("u1", uid, _plan())
+    assert dest.stat().st_size == 2 * ps
+    assert info["size_bytes"] == 2 * ps
+
+
 def test_out_of_order_part_is_refused_with_the_resume_point():
     ps = uploads.part_size()
     uid = uploads.create_session("u1", "talk.mp4", 2 * ps, _plan())["upload_id"]
