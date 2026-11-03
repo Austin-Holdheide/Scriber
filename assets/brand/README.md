@@ -4,6 +4,45 @@ Everything here is generated from the same two values the site already uses: the
 and the palette (`#0f1115` background, `#2563eb` accent). If the mark changes, change it in one
 place and re-render — do not hand-edit the PNGs.
 
+## Colour
+
+| Role | Hex | Where it is used |
+|---|---|---|
+| Accent / brand | `#2563eb` | buttons, the spark, focus rings, highlighted UI |
+| Accent (pressed) | `#1d4ed8` | hover/active state on accent buttons |
+| Background | `#0f1115` | page background, app and site |
+| Panel | `#161a22` | cards, notices, table headers |
+| Panel (raised) | `#1b2029` | nested surfaces |
+| Border | `#262a33` | dividers, card edges |
+| Border (strong) | `#3a3f4b` | control outlines |
+| Text | `#e6e8eb` | body copy |
+| Text (muted) | `#9aa1ad` | secondary copy, plan lines |
+| Link | `#7ba6ff` | link text on dark backgrounds |
+
+Measured WCAG contrast (white text on the accent button is 5.17:1, which passes AA):
+
+| Pair | Ratio | Verdict |
+|---|---|---|
+| `#ffffff` on `#2563eb` | 5.17:1 | AA — safe for button labels |
+| `#ffffff` on `#1d4ed8` | 6.70:1 | AA |
+| `#e6e8eb` on `#0f1115` | 15.39:1 | AAA |
+| `#9aa1ad` on `#0f1115` | 7.27:1 | AAA |
+| `#2563eb` on `#0f1115` | 3.66:1 | large text only — do not use the accent for body text on dark |
+| `#2563eb` on `#ffffff` | 3.66:1 | large text only — do not use the accent for body text on white |
+
+That last row is why link text is `#7ba6ff` rather than the accent: the accent is a **fill** colour.
+For anything rendered as text, use the lighter link tint on dark and `#1d4ed8` on white.
+
+## Stripe branding
+
+Stripe asks for two colours and uses them differently:
+
+- **Brand colour** — fills the pay button, with white text on top. Enter `#2563eb` (5.17:1).
+- **Accent colour** — used for links and small highlights **on white**. Enter `#1d4ed8`, one step
+  darker, because `#2563eb` on white is only 3.66:1 and would be hard to read at body size.
+
+Both read as the same blue family, so Checkout still looks like the app while staying legible.
+
 ## Files
 
 | File | Size | Use |
