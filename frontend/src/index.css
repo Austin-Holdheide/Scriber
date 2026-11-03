@@ -454,6 +454,35 @@ a.brand-link { display: inline-flex; align-items: center; gap: 8px; color: inher
   letter-spacing: 0.01em;
 }
 
+/* ---- upgrade prompt for free accounts, beside the plan line ---- */
+.plan-row {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 0.75rem;
+  flex-wrap: wrap;
+}
+.plan-row .plan-line { margin: 0.35rem 0 0.9rem; }
+.upgrade-cta {
+  display: inline-flex;
+  align-items: center;
+  padding: 0.3rem 0.72rem;
+  margin-bottom: 0.9rem;
+  border-radius: 6px;
+  border: 1px solid #2563eb;
+  background: rgba(37, 99, 235, 0.14);
+  color: #cfe0ff;
+  font-size: 0.8rem;
+  font-weight: 600;
+  text-decoration: none;
+  white-space: nowrap;
+}
+.upgrade-cta:hover {
+  background: rgba(37, 99, 235, 0.24);
+  border-color: #3b82f6;
+  color: #eaf1ff;
+}
+
 /* ---- plan-limit notification (quota_exceeded / feature_locked / too big / too long) ---- */
 .quota-pop {
   position: fixed;

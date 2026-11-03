@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from "react";
-import { useLocation, useNavigate } from "react-router-dom";
+import { useLocation, useNavigate, Link } from "react-router-dom";
 import { supabase, api } from "../lib/supabase";
 import QuotaNotice, { type QuotaDetail } from "./QuotaNotice";
 import { uploadVideoChunked, UploadError } from "../lib/upload";
@@ -17,6 +17,8 @@ export default function Videos() {
   const [drag, setDrag] = useState(false);
   // plan + usage, so the page can say what the account may do before it tries
   const [limits, setLimits] = useState<any>(null);
+  // only a free account is sold to: premium and admin never see the upgrade prompt
+  const isFreePlan = !!limits && limits.plan === "free";
   const [quotaNotice, setQuotaNotice] = useState<QuotaDetail | null>(null);
   const [uploading, setUploading] = useState<{ name: string; pct: number } | null>(null);
   const [err, setErr] = useState("");
@@ -178,28 +180,39 @@ export default function Videos() {
           onChange={(e) => { upload(e.target.files); e.target.value = ""; }} />
       </div>
       {limits && (
-        <p className="muted plan-line">
-          {(() => {
-            const l = limits.limits || {};
-            const u = limits.usage || {};
-            const bits: string[] = [];
-            if ((l.uploads_per_window ?? 0) < 0) {
-              bits.push("unlimited transcriptions");
-            } else {
-              const win = (l.window_s ?? 0) >= 86400 ? "today" : "this window";
-              bits.push(`${u.transcriptions_left ?? "?"} of ${l.uploads_per_window} left ${win}`);
-            }
-            if (l.max_duration_s > 0) {
-              bits.push(l.max_duration_s < 60
-                ? `${l.max_duration_s} s max`
-                : `${Math.round(l.max_duration_s / 60)} min max`);
-            }
-            if (l.max_upload_bytes > 0) {
-              bits.push(`${Math.round(l.max_upload_bytes / 1048576)} MB max`);
-            }
-            return `${limits.plan} plan — ${bits.join(" · ")}`;
-          })()}
-        </p>
+        <div className="plan-row">
+          <p className="muted plan-line">
+            {(() => {
+              const l = limits.limits || {};
+              const u = limits.usage || {};
+              const bits: string[] = [];
+              if ((l.uploads_per_window ?? 0) < 0) {
+                bits.push("unlimited transcriptions");
+              } else {
+                const win = (l.window_s ?? 0) >= 86400 ? "today" : "this window";
+                bits.push(`${u.transcriptions_left ?? "?"} of ${l.uploads_per_window} left ${win}`);
+              }
+              if (l.max_duration_s > 0) {
+                bits.push(l.max_duration_s < 60
+                  ? `${l.max_duration_s} s max`
+                  : `${Math.round(l.max_duration_s / 60)} min max`);
+              }
+              if (l.max_upload_bytes > 0) {
+                bits.push(`${Math.round(l.max_upload_bytes / 1048576)} MB max`);
+              }
+              return `${limits.plan} plan — ${bits.join(" · ")}`;
+            })()}
+          </p>
+          {isFreePlan && (
+            <Link
+              to="/pro"
+              className="upgrade-cta"
+              title="5 GB uploads, 24-hour files, speaker labels, 30-day share links"
+            >
+              Upgrade to Pro
+            </Link>
+          )}
+        </div>
       )}
       {err && <p className="muted" style={{ color: "#f87171" }}>{err}</p>}
       {toast && <div className="toast-banner">{toast}</div>}
