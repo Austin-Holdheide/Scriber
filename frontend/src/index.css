@@ -587,18 +587,64 @@ a.brand-link { display: inline-flex; align-items: center; gap: 8px; color: inher
 
 .pro-cta { border-top: 1px solid #1e2430; padding-top: 1.6rem; }
 .pro-price { color: #c8ced8; font-size: 0.92rem; margin: 0 0 1rem; }
+
+/* CTA cluster: a real row, so two buttons never render as one blob */
+.pro-buttons {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.65rem;
+  margin: 0.2rem 0 0;
+}
 .pro-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 42px;
   background: #2563eb;
   color: #fff;
-  border: 0;
+  border: 1px solid #2563eb;
   border-radius: 8px;
-  padding: 11px 20px;
+  padding: 0 20px;
   font-size: 0.92rem;
   font-weight: 600;
+  line-height: 1;
+  text-decoration: none;
   cursor: pointer;
+  transition: background 0.15s ease, border-color 0.15s ease, color 0.15s ease;
 }
-.pro-button:hover:not(:disabled) { background: #1d4ed8; }
+.pro-button:hover:not(:disabled) { background: #1d4ed8; border-color: #1d4ed8; }
+.pro-button:focus-visible { outline: 2px solid #93b4ff; outline-offset: 2px; }
 .pro-button:disabled { opacity: 0.6; cursor: default; }
+
+/* the annual option is an alternative, not a second primary */
+.pro-button-alt {
+  background: transparent;
+  border-color: #2f4a80;
+  color: #cfe0ff;
+}
+.pro-button-alt:hover:not(:disabled) {
+  background: rgba(37, 99, 235, 0.14);
+  border-color: #2563eb;
+  color: #eaf1ff;
+}
+
+/* neutral companion action (Back to your videos) */
+.pro-secondary {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 42px;
+  padding: 0 18px;
+  border: 1px solid #262a33;
+  border-radius: 8px;
+  color: #c8ced8;
+  font-size: 0.9rem;
+  text-decoration: none;
+  transition: border-color 0.15s ease, color 0.15s ease;
+}
+.pro-secondary:hover { border-color: #3a4150; color: #e6e8eb; }
+
 .pro-onlist { color: #4ade80; font-size: 0.92rem; margin: 0; }
 .pro-err { color: #f87171; font-size: 0.85rem; margin: 10px 0 0; }
 .pro-fine { color: #6b7280; font-size: 0.8rem; line-height: 1.6; margin: 1.4rem 0 0; max-width: 60ch; }
