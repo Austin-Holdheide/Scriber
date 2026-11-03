@@ -1,0 +1,5 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32" role="img" aria-label="Scribly">
+  <title>Scribly mark</title>
+  <!-- the spark alone, no tile: for dark or accent backgrounds -->
+  <path d="M16 5c.6 5.4 2.9 8 10.5 11C18.9 19 16.6 21.6 16 27c-.6-5.4-2.9-8-10.5-11C13.1 13 15.4 10.4 16 5Z" fill="#2563eb"/>
+</svg>
