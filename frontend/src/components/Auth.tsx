@@ -162,11 +162,11 @@ export default function Auth({ recovery = false, onRecoveryDone }: Props) {
           </form>
         ) : sentTo ? (
           <div className="auth-card">
-            <h2 style={{ margin: "0 0 10px", fontSize: "1.05rem", color: "#e8ebef" }}>
+            <h2 style={{ margin: "0 0 10px", fontSize: "1.05rem", color: "#e6e8eb" }}>
               Confirm your email
             </h2>
             <p className="auth-note">
-              We sent a link to <strong style={{ color: "#e8ebef" }}>{sentTo}</strong>. Click it
+              We sent a link to <strong style={{ color: "#e6e8eb" }}>{sentTo}</strong>. Click it
               to activate your account, then sign in.
             </p>
             <p className="auth-note" style={{ marginTop: "-4px" }}>

@@ -653,3 +653,6 @@ a.brand-link { display: inline-flex; align-items: center; gap: 8px; color: inher
 .pro-hero { display: block; }
 
 .pro-note { color: #9aa3b0; font-size: 0.84rem; line-height: 1.55; margin: 1.4rem 0 0; max-width: 62ch; }
+
+/* lock glyph on an unavailable share link (replaces an emoji) */
+.lock-mark { color: #3a3f4b; display: flex; justify-content: center; margin-bottom: 0.75rem; }

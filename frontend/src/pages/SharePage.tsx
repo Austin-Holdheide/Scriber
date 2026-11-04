@@ -127,7 +127,15 @@ export default function SharePage() {
   if (error) {
     return (
       <div className="container" style={{ textAlign: "center", paddingTop: "4rem" }}>
-        <h1 style={{ fontSize: "1.6rem" }}>🔒 Link unavailable</h1>
+        <div className="lock-mark" aria-hidden="true">
+          <svg viewBox="0 0 24 24" width="34" height="34" fill="none" stroke="currentColor"
+               strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round">
+            <rect x="4.5" y="10.5" width="15" height="10" rx="2.5" />
+            <path d="M8 10.5V7.8a4 4 0 0 1 8 0v2.7" />
+            <circle cx="12" cy="15.4" r="1.2" fill="currentColor" stroke="none" />
+          </svg>
+        </div>
+        <h1 style={{ fontSize: "1.6rem" }}>Link unavailable</h1>
         <p className="muted">{error}</p>
       </div>
     );
