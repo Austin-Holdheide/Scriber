@@ -82,18 +82,40 @@ def create_customer(user_id: str, email: str | None) -> str:
 
 def create_checkout_session(*, user_id: str, customer_id: str | None, price_id: str,
                             email: str | None = None) -> dict:
-    """Hosted Checkout in subscription mode. The user uuid rides along as
-    client_reference_id and on the subscription, so every later webhook can resolve it."""
+    """Hosted Checkout in subscription mode.
+
+    Parameters marked "Checkout Studio" come from the Stripe dashboard UI and must
+    be sent exactly as configured there. `mode`, `success_url`, `cancel_url` and
+    `line_items` are the sample-only ones and carry this app's real values.
+
+    Deliberately kept beyond that list: `client_reference_id` and the subscription
+    metadata. They are how the webhook attributes a subscription back to an
+    account; without them a payment would take money and grant nothing.
+    """
     params = {
+        # --- Checkout Studio (configured in the dashboard, do not hand-edit) ---
+        "ui_mode": "hosted_page",
+        "billing_address_collection": "auto",
+        "phone_number_collection[enabled]": "true",
+        "allow_promotion_codes": "true",
+        "payment_method_collection": "always",
+        "submit_type": "auto",
+        "integration_identifier": "hosted_web_0001",
+        "origin_context": "web",
+        # --- sample-only, real values for this app ---
         "mode": "subscription",
-        "line_items[0][price]": price_id,
-        "line_items[0][quantity]": "1",
         "success_url": f"{settings.app_base_url}/billing/success?session_id={{CHECKOUT_SESSION_ID}}",
         "cancel_url": f"{settings.app_base_url}/pro",
+        "line_items[0][price]": price_id,
+        "line_items[0][quantity]": "1",
+        # --- attribution (see STRIPE_INTEGRATION_TODO.md) ---
         "client_reference_id": user_id,
         "subscription_data[metadata][user_id]": user_id,
-        "allow_promotion_codes": "true",
     }
+    # Stripe Tax needs a head-office address on the account; until that exists
+    # every session fails with "valid head office address" - so it is switchable.
+    if settings.stripe_automatic_tax:
+        params["automatic_tax[enabled]"] = "true"
     if customer_id:
         params["customer"] = customer_id
     elif email:

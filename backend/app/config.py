@@ -20,6 +20,10 @@ class Settings:
     app_base_url: str = os.getenv("APP_BASE_URL", "https://app.scribly.cc")
     # days a failed payment may stay past_due before Pro is withdrawn
     billing_grace_days: int = int(os.getenv("BILLING_GRACE_DAYS", "7") or "7")
+    # Stripe Tax is configured on in Checkout Studio, but the API refuses every
+    # session until the account has a head-office address. Set STRIPE_AUTOMATIC_TAX=0
+    # to keep selling while that is missing; see STRIPE_INTEGRATION_TODO.md.
+    stripe_automatic_tax: bool = os.getenv("STRIPE_AUTOMATIC_TAX", "1") not in ("0", "false", "False", "")
 
     cors_origins: list = [
         o.strip()
