@@ -102,6 +102,48 @@ Shipped history lives in `CHANGELOG.md`; operational rules and traps in `HANDOFF
   GitHub reports **0 workflow runs**, so every check so far has been run by hand. After the merge, confirm a
   green run on a throwaway PR before trusting it as a gate.
 
+## Automation and self-checks (A) — proposed 2026-11-18
+
+Goal: know the product works, not just that the units are `active`. Everything below is additive to
+what already exists — do not rebuild those parts.
+
+**Already running (leave alone):** ten Grafana rules → `grafana-ntfy-relay` → ntfy `scriber-alerts` →
+phone (API down, worker down, worker restart loop, queue backlog, failed jobs, disk > 80 %, GPU wedged,
+GPU temp, exporter down, node down); `scriber-requeue.timer` every 60 s on 202 (stale-job requeue +
+cancel convergence); media ZFS snapshot 03:15 daily; offsite copy Sun 05:00; vzdump nightly 04:00;
+`hermes-autoupdate.timer` 04:30.
+
+**The gap, verified:** every existing rule watches a unit, a socket or a metric. Nothing proves an
+upload becomes a transcript. A worker can be `active` with a broken model, Cloudflare can refuse POSTs,
+a migration can break the DB trigger, or the storage bind can vanish — and the first sign is a user
+telling us. Dev (206) is not scraped at all. Backup *freshness* is unmonitored: a silently failing
+`pg_dump` looks exactly like a healthy one until a restore is needed.
+
+- **A-1 Synthetic canary (highest value).** Every 15 min: a dedicated canary account uploads a generated
+  5-second MP4 (ffmpeg `testsrc` + sine) through the **public** hostname, waits ≤ 10 min for
+  `videos.status=done` with segments > 0, then hard-deletes video + media. Exports
+  `scriber_canary_ok`, `scriber_canary_seconds`, `scriber_canary_last_success_timestamp`. Alert on 2
+  consecutive failures, or no success in 45 min. One probe covers API + JWKS + Cloudflare + Supabase +
+  Redis + lane routing + GPU + whisper + storage + thumbnails + the delete path. Canary account is
+  `admin` plan and excluded from usage/retention so it never pollutes the counters or the sweep (F-9).
+- **A-2 Freshness alerts.** pg_dump age > 26 h, media snapshot > 26 h, offsite > 8 days, vzdump > 26 h,
+  canary last-success > 45 min. Cheap Prometheus rules over file mtimes (`node_exporter` textfile
+  collector) — the failure they catch is silent by nature.
+- **A-3 Dev under monitoring.** Scrape 206 (node + app exporter + its lane depths) and run a dev canary,
+  so a regression is caught on `dev.scribly.cc` instead of by eye.
+- **A-4 Scoped self-healing — only for failure modes already known.** (a) reconcile the RQ worker
+  registry against live PIDs and clear the stale `rq:worker:` key that crash-loops a restarted unit;
+  (b) restart a worker whose RQ heartbeat is older than 3× the interval while its unit is `active`;
+  (c) restart Supabase containers after 3 failed health calls, with backoff, max 2/hour. Rule: every
+  automatic action also sends a notification — never heal silently, that is how the cause gets lost.
+- **A-5 Prove the alarm path, and drill the restore.** Hourly heartbeat published to ntfy and alerted on
+  when it stops (an alerting chain that dies quietly is worse than none); monthly restore of the newest
+  pg_dump into a scratch database with row counts compared; intentional stop of a worker on dev to
+  confirm FIRING + RESOLVED still reach the phone after any routing change.
+
+**Order:** A-1 + A-2 first (cheap, and together they cover "is it working" and "is the data safe"), then
+A-3, then A-4 restricted to those three modes, A-5 as standing practice.
+
 ## Done ledger (newest first)
 
 - **F-8 Queue priority lanes (2026-11-18, dev only).** `quota.lane_for_plan/lane_for_user` decide the
