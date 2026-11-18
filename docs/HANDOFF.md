@@ -62,28 +62,27 @@ Read this first. It supersedes older plan docs where they disagree.
   Proven in prod with a throwaway account: init 201, part 200, complete 201, `duration_s=5.0`,
   byte-identical on disk, staging empty, then deleted (20 rows / 102 files / 4.0 G unchanged).
 
-## Open work, in the order I would do it
+## Open work — see `docs/roadmap.md`
 
-1. **Email routing is broken** — `hello@scribly.cc` and `privacy@scribly.cc` are printed on the
-   terms/privacy pages but `scribly.cc` has **no MX** and SPF is `v=spf1 -all`, so mail
-   to them is refused. Fix = Cloudflare Email Routing (free): enable it, verify a destination inbox,
-   add custom addresses, merge SPF to `v=spf1 include:_spf.mx.cloudflare.net -all`. Needs a Cloudflare
-   API token (Zone.DNS edit) to do from the shell, or four dashboard clicks by the user.
-2. **Restore the 7-day free retention promise (F-9)** — deliberately not built because a naive sweep
-   would delete the existing 18-video test library (oldest 28 days, all free-plan). Needs a cutoff
-   date, dry-run first, and artifact/media cleanup mirroring `videos_delete.py`.
-3. **Hour-based metering** — fair use is policy only; `usage_events` counts transcriptions, not audio
-   hours. Add duration to the log and sum it for reporting/throttling.
-4. ~~**Rest of the alert rules**~~ — **done 2026-10-29.** Nine more rules in folder `scriberly`, group
-   `scribers-app` (API down, worker not running, worker restart loop, queue > 5 for 10 m, new failed
-   jobs, disk > 80 %, GPU wedged, GPU temp, exporter down). Defined as code in
-   `ops/grafana-alerts/` — edit the JSON and re-run `apply_rules.py`, don't click. Proven by stopping
-   `app-exporter` on 202: FIRING + RESOLVED both delivered. Caveat: worker health is *unit-level*
-   (`node_systemd_unit_state`), not RQ-level — a live unit holding a stale `rq:worker:` key is only
-   caught while systemd retries.
-5. **Stripe (T-1)** — checkout + webhook writing `subscriptions`; `pro_interest` rows are the warm list.
-6. Then product depth: transcode (F-6), burn-in render (F-1), subtitle editing (F-2), watermark (F-4),
-   bulk upload (F-3/T-8).
+`docs/roadmap.md` is the authoritative backlog (verified against the live stack 2026-11-18). Summary of
+where it stands:
+
+1. **Four operator actions block money**: Stripe onboarding (`charges_enabled: false`), the head-office
+   address that `automatic_tax` needs, email routing (no MX, SPF `-all` → `hello@`/`privacy@` bounce), and
+   sign-off on the checkout-era terms/privacy drafts (still undeployed; prod serves the Oct-29 copy).
+2. **Billing is dev-only.** `feature/billing-stripe` @ `5dfbedd` is 7 commits ahead of `main`; 206 has
+   `0009` applied, test keys and `STRIPE_AUTOMATIC_TAX=0`. Prod 202 has none of it. The next code step is
+   to ship it to prod *without* keys — `GET /api/billing/status` then reports "not configured", so `/pro`
+   keeps the early-access list and nothing else changes.
+3. **Promised but not built**: 7-day free auto-delete (F-9, `retention_days=7` is declared but no sweep
+   exists), the free-tier countdown (F-10), queue priority lanes (F-8 — `Plan.queue` is set, `queue.py`
+   enqueues everything to `transcribe-gpu`), hour-based metering (F-7b), web-push (F-11), transcode (F-6),
+   burn-in render (F-1), watermark (F-4), bulk upload (F-3/T-8).
+4. **Ops debt**: 205 rootfs at 69% (O-2), NPM raw-conf fragility (O-1/O-3), docs refresh (O-6),
+   benchmarks (O-7), RQ-level worker health (O-8).
+5. **Decided, do not resurrect**: no 14-day trial (the landing FAQ says "it is not a trial" and Checkout
+   sends no `trial_period_days`); Pro is "unlimited" under fair use, not 50 per 12 h.
+
 
 ## Traps already hit (do not rediscover)
 

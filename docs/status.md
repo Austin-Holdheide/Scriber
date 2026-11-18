@@ -1,4 +1,8 @@
-# Scribly status — verified live 2026-10-27 22:40 UTC (rewritten)
+# Scribly status — point-in-time snapshot, verified live 2026-10-27 22:40 UTC
+
+> **Superseded.** This is a snapshot, not the backlog. Current state: `docs/roadmap.md`; rules and traps:
+> `docs/HANDOFF.md`. Claims below that are now false (TrueNAS offline, GitHub push lag, POC on prod) were
+> true on the date above.
 
 All facts below were checked live this pass: `pct` on host **neo** (192.168.1.109) via SSH,
 psql inside `supabase-db` on 201, HTTP probes on 202, and public URL probes from LXC 113.

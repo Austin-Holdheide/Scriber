@@ -4,6 +4,23 @@ Releases before v0.8.0 exist as git tags only. Dates are the tag date.
 
 ## Unreleased
 
+### Added
+
+- **Billing (T-1), dev only.** Stripe hosted Checkout, Billing Portal and a signed webhook that writes
+  `public.subscriptions` (`migrations/0009_stripe_billing.sql`, `stripe_events` ledger for idempotent
+  retries, 7-day `past_due` grace). `/pro` renders one of three states from `GET /api/billing/status`
+  (already Pro / buy / not configured), so it is safe to deploy before any key exists. `automatic_tax` is
+  driven by `STRIPE_AUTOMATIC_TAX` because Stripe rejects every session until the account has a head-office
+  address. Checkout parameters follow Checkout Studio; `client_reference_id` and
+  `subscription_data.metadata.user_id` are kept deliberately — they are how a payment is attributed to an
+  account. Remaining setup: `STRIPE_INTEGRATION_TODO.md`.
+- Brand assets for Stripe (`assets/brand/`): icon/mark/wordmark SVGs plus the 512/128/32 PNGs, and the
+  documented palette with measured contrast (accent `#1d4ed8`, because `#2563eb` is only 3.66:1 as text).
+- CI on every push: `scripts/audit.py --strict` (plan numbers vs `quota.py`, no emoji, no `<header>` heroes,
+  palette, meta tags, README image refs, secret tripwire) plus pytest and `tsc -b` + `vite build`.
+- `ops/grafana-alerts/`: nine alert rules as code (API down, worker not running/restart loop, queue depth,
+  failed jobs, disk, GPU wedged/temp, exporter down), applied with `apply_rules.py`.
+
 ### Fixed
 
 - Chunked upload resume no longer duplicates a part. `next_index` is `received // part_size`, but an
