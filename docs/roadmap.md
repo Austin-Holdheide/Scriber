@@ -100,13 +100,18 @@ Shipped history lives in `CHANGELOG.md`; operational rules and traps in `HANDOFF
 - **O-7** `docs/benchmarks.md`: add the int8 P4 numbers from the W10 runs.
 - **O-8** RQ worker health is unit-level (`node_systemd_unit_state`), not RQ-level: a live unit holding a
   stale `rq:worker:` key is only caught while systemd retries. Consider an RQ-level exporter.
+- **O-9** Prove CI actually runs. `.github/workflows/ci.yml` ships on `feature/billing-stripe` only and
+  GitHub reports **0 workflow runs**, so every check so far has been run by hand. After the merge, confirm a
+  green run on a throwaway PR before trusting it as a gate.
 
 ## Done ledger (newest first)
 
 - `5dfbedd` Checkout Studio parameters + `STRIPE_AUTOMATIC_TAX` switch, verified against the live test
   account (nine parameters stored, `amount_total` 900 usd, 61 tests).
 - `964d155` CI: `scripts/audit.py` (plan-number/copy/markup/palette/secrets consistency) + pytest + tsc/vite
-  on every push; first run caught a forbidden emoji and an off-palette colour.
+  on every push; first run caught a forbidden emoji and an off-palette colour. **Caveat: GitHub has never
+  executed it — 0 workflow runs on the repo, because `ci.yml` exists only on this branch.** It starts
+  gating for real once the file is on `main`.
 - `bdcfcc1`…`560fe84` brand assets (icon/mark/wordmark PNGs Stripe wants, palette + measured contrast).
 - `443fc4a` Billing UI: `/pro` three-state CTA, `BillingSuccess`, drafted terms/privacy.
 - `5699beb` Stripe Checkout + Billing Portal + webhook (T-1), `0009_stripe_billing.sql`.

@@ -17,7 +17,8 @@ Releases before v0.8.0 exist as git tags only. Dates are the tag date.
 - Brand assets for Stripe (`assets/brand/`): icon/mark/wordmark SVGs plus the 512/128/32 PNGs, and the
   documented palette with measured contrast (accent `#1d4ed8`, because `#2563eb` is only 3.66:1 as text).
 - CI on every push: `scripts/audit.py --strict` (plan numbers vs `quota.py`, no emoji, no `<header>` heroes,
-  palette, meta tags, README image refs, secret tripwire) plus pytest and `tsc -b` + `vite build`.
+  palette, meta tags, README image refs, secret tripwire) plus pytest and `tsc -b` + `vite build`. Not yet
+  exercised on GitHub — 0 workflow runs, because the file is not on `main`; every check so far was run by hand.
 - `ops/grafana-alerts/`: nine alert rules as code (API down, worker not running/restart loop, queue depth,
   failed jobs, disk, GPU wedged/temp, exporter down), applied with `apply_rules.py`.
 
