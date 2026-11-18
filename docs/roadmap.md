@@ -29,13 +29,10 @@ Shipped history lives in `CHANGELOG.md`; operational rules and traps in `HANDOFF
    *"You must have a valid head office address"*. Dev is parked at `STRIPE_AUTOMATIC_TAX=0` so the flow can
    be exercised. **Flip to `1` the moment the address is saved** — selling with no tax calculation is not
    a place to sit.
-3. **F-5b Email routing** — `hello@scribly.cc` and `privacy@scribly.cc` are printed on the public pages but
-   the zone has no MX and SPF is `v=spf1 -all`, so mail is refused. Cloudflare Email Routing + SPF merge to
-   `v=spf1 include:_spf.mx.cloudflare.net -all`. Needs a Zone.DNS API token, or four dashboard clicks.
-4. **T-1c Legal sign-off** — checkout-era `terms.html` / `privacy.html` exist on the branch (prices,
+3. **T-1c Legal sign-off** — checkout-era `terms.html` / `privacy.html` exist on the branch (prices,
    auto-renewal, cancellation, refunds, 7-day grace, processor table) but are **not deployed**; prod still
    serves the Oct-29 copy. The refund wording is a draft — it needs your approval before it goes live.
-5. **T-1d Live keys** — live-mode prices, `sk_live_`, a live webhook endpoint at
+4. **T-1d Live keys** — live-mode prices, `sk_live_`, a live webhook endpoint at
    `https://app.scribly.cc/api/billing/webhook` + its signing secret, then the same on dev for test mode.
 
 ## Next — code, in the order I would do it
@@ -105,6 +102,16 @@ Shipped history lives in `CHANGELOG.md`; operational rules and traps in `HANDOFF
   green run on a throwaway PR before trusting it as a gate.
 
 ## Done ledger (newest first)
+
+- **Email routing live (F-5b, 2026-11-18).** Cloudflare Email Routing on `scribly.cc`: MX ×3
+  (`route1/2/3.mx.cloudflare.net`), the null SPF `v=spf1 -all` replaced by
+  `v=spf1 include:_spf.mx.cloudflare.net -all` (one record only — two SPF records is a permerror, which
+  is what the dashboard wizard leaves behind), `cf2024-1._domainkey` DKIM, and rules for
+  `hello@scribly.cc` + `privacy@scribly.cc` → the verified destination `austin.holdheide@outlook.com`.
+  Proven with `RCPT TO` returning `250 2.1.0 Ok` at all three MXs, then two real messages through Resend.
+  Resend was unaffected: it authenticates on `send.scribly.cc` + `resend._domainkey`, not the apex.
+  Tooling: `/root/.hermes/cf_email_routing.py` (idempotent, `--apply`; aborts before touching DNS if
+  enabling routing fails).
 
 - `5dfbedd` Checkout Studio parameters + `STRIPE_AUTOMATIC_TAX` switch, verified against the live test
   account (nine parameters stored, `amount_total` 900 usd, 61 tests).

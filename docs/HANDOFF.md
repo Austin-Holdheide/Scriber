@@ -67,9 +67,10 @@ Read this first. It supersedes older plan docs where they disagree.
 `docs/roadmap.md` is the authoritative backlog (verified against the live stack 2026-11-18). Summary of
 where it stands:
 
-1. **Four operator actions block money**: Stripe onboarding (`charges_enabled: false`), the head-office
-   address that `automatic_tax` needs, email routing (no MX, SPF `-all` → `hello@`/`privacy@` bounce), and
-   sign-off on the checkout-era terms/privacy drafts (still undeployed; prod serves the Oct-29 copy).
+1. **Three operator actions block money**: Stripe onboarding (`charges_enabled: false`), the head-office
+   address that `automatic_tax` needs, and sign-off on the checkout-era terms/privacy drafts (still
+   undeployed; prod serves the Oct-29 copy). Email routing is done — `hello@`/`privacy@` forward to the
+   verified destination (MX + single SPF + DKIM live, `RCPT` 250 at all three MXs).
 2. **Billing is dev-only.** `feature/billing-stripe` @ `5dfbedd` is 7 commits ahead of `main`; 206 has
    `0009` applied, test keys and `STRIPE_AUTOMATIC_TAX=0`. Prod 202 has none of it. The next code step is
    to ship it to prod *without* keys — `GET /api/billing/status` then reports "not configured", so `/pro`
