@@ -70,9 +70,10 @@ def collect() -> dict:
         stats["scriber_segments_total"] = _count_from_range(r)
 
 
-    # redis queue depth (gpu queue; fallback queue too)
-    stats["scriber_queue_depth{queue=\"transcribe-gpu\"}"] = _redis_int("LLEN transcribe-gpu")
-    stats["scriber_queue_depth{queue=\"transcribe\"}"] = _redis_int("LLEN transcribe")
+    # redis queue depth, one series per lane (F-8): high = premium/admin, low = free.
+    # `sum(scriber_queue_depth)` in the backlog alert keeps working across lanes.
+    for lane in ("transcribe-high", "transcribe-low", "diarize-gpu"):
+        stats[f"scriber_queue_depth{{queue=\"{lane}\"}}"] = _redis_int(f"LLEN {lane}")
 
     # storage bytes
     stats["scriber_media_bytes"] = 0  # filled by du below if possible

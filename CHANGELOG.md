@@ -6,6 +6,14 @@ Releases before v0.8.0 exist as git tags only. Dates are the tag date.
 
 ### Added
 
+- **Queue priority lanes (F-8).** Uploads now land in `transcribe-high` (premium/admin) or
+  `transcribe-low` (free), and workers read the paid lane first — queue order is the priority. The lane
+  comes from `quota.Plan.queue` via `lane_for_plan`/`lane_for_user`, so plan, limits and lane cannot
+  disagree; unknown plans fall to the free lane. The retry endpoint and the stale-job sweeper carry the
+  lane too, so a requeued Pro job does not silently drop to free. Workers read `RQ_QUEUES` (comma list);
+  a leftover single `RQ_QUEUE` is appended last and can no longer outrank a lane. `app_exporter` publishes
+  one `scriber_queue_depth` series per lane. Dev/206 only so far; prod rollout order is in `docs/runbook.md`.
+
 - **Billing (T-1), dev only.** Stripe hosted Checkout, Billing Portal and a signed webhook that writes
   `public.subscriptions` (`migrations/0009_stripe_billing.sql`, `stripe_events` ledger for idempotent
   retries, 7-day `past_due` grace). `/pro` renders one of three states from `GET /api/billing/status`

@@ -17,6 +17,7 @@ from datetime import datetime, timedelta, timezone
 
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
+from app.services import quota  # noqa: E402
 from app.services.supabase_client import admin_client  # noqa: E402
 from app.services.queue import enqueue_transcription  # noqa: E402
 
@@ -30,7 +31,7 @@ def main():
     # 1) stale ACTIVE jobs -> requeue
     r = (
         admin_client().table("jobs")
-        .select("id,video_id,stage,updated_at,videos(storage_path)")
+        .select("id,video_id,user_id,stage,updated_at,videos(storage_path)")
         .in_("stage", ["queued", "extracting", "transcribing", "writing"])
         .lt("updated_at", cutoff)
         .execute()
@@ -52,7 +53,9 @@ def main():
                 from app.services.queue import enqueue_diarization
                 enqueue_diarization(job_id=jid, video_id=vid, storage_path=sp)
             else:
-                enqueue_transcription(job_id=jid, video_id=vid, storage_path=sp)
+                # same lane the upload went to: a requeued Pro job must not fall into the free lane
+                enqueue_transcription(job_id=jid, video_id=vid, storage_path=sp,
+                                      lane=quota.lane_for_user(job.get("user_id") or ""))
             requeued += 1
         except Exception as e:
             print(f"  enqueue failed: {e}")

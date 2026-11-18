@@ -76,9 +76,9 @@ where it stands:
    to ship it to prod *without* keys — `GET /api/billing/status` then reports "not configured", so `/pro`
    keeps the early-access list and nothing else changes.
 3. **Promised but not built**: 7-day free auto-delete (F-9, `retention_days=7` is declared but no sweep
-   exists), the free-tier countdown (F-10), queue priority lanes (F-8 — `Plan.queue` is set, `queue.py`
-   enqueues everything to `transcribe-gpu`), hour-based metering (F-7b), web-push (F-11), transcode (F-6),
-   burn-in render (F-1), watermark (F-4), bulk upload (F-3/T-8).
+   exists), the free-tier countdown (F-10), hour-based metering (F-7b), web-push (F-11), transcode (F-6),
+   burn-in render (F-1), watermark (F-4), bulk upload (F-3/T-8). Queue priority (F-8) is built and live on
+   dev — prod still runs the single old lane.
 4. **Ops debt**: 205 rootfs at 69% (O-2), NPM raw-conf fragility (O-1/O-3), docs refresh (O-6),
    benchmarks (O-7), RQ-level worker health (O-8).
 5. **Decided, do not resurrect**: no 14-day trial (the landing FAQ says "it is not a trial" and Checkout

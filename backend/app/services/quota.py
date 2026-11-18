@@ -146,6 +146,25 @@ def plan_for(user_id: str) -> Plan:
     return PLANS.get(plan_name_for(user_id), PLANS[DEFAULT_PLAN])
 
 
+# ------------------------------------------------------------------ queue lane (F-8)
+
+#: RQ lanes, paid first. Kept next to the plans so the tier, its limits and its queue lane are
+#: decided in one place; `services/queue.py` only knows the names.
+LANE_HIGH = "high"
+LANE_LOW = "low"
+
+
+def lane_for_plan(plan_name: str | None) -> str:
+    """The queue lane a plan is entitled to. Anything unrecognised falls to the free lane."""
+    plan = PLANS.get(plan_name or DEFAULT_PLAN) or PLANS[DEFAULT_PLAN]
+    return plan.queue if plan.queue in (LANE_HIGH, LANE_LOW) else LANE_LOW
+
+
+def lane_for_user(user_id: str) -> str:
+    """Lane for an account, for callers that only have a user id (retry, sweeper, re-upload)."""
+    return lane_for_plan(plan_name_for(user_id))
+
+
 def set_plan(user_id: str, plan: str, status: str = "active", **fields) -> dict:
     if plan not in PLANS:
         raise ValueError(f"unknown plan {plan!r}")

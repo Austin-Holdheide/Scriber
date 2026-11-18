@@ -130,8 +130,16 @@ added, grep `videos_delete.py` in the same change.
 - **PyAV drift kills jobs silently:** on Python ≥3.12 pip installs `av 19.x`, whose `av.open()` no longer
   takes `metadata_errors`; every transcribe dies inside decode while RQ logs "Successfully completed".
   Pin `av==18.1.0`.
-- **The API always enqueues to `transcribe-gpu`**, so a CPU-only dev worker needs `RQ_QUEUE=transcribe-gpu`
-  or it never receives work.
+- **The API enqueues to a lane, not a single queue (F-8):** `transcribe-high` for premium/admin,
+  `transcribe-low` for free, and workers read `high` first — queue order *is* the priority. A CPU-only
+  container must list both lanes (`RQ_QUEUES=transcribe-high,transcribe-low`) or it never receives work;
+  a leftover single `RQ_QUEUE` is appended last and cannot outrank a lane.
+- **Rolling the lanes to prod** (dev/206 already runs them): first `redis-cli llen rq:queue:transcribe-gpu`
+  on 203 must be 0 — old-lane jobs are never migrated. Then push `services/queue.py`, `services/quota.py`,
+  `services/ingest.py`, `routers/videos_ops.py`, `workers/worker.py`, `scripts/requeue_stale.py`; restart
+  202 (`transcriber-api`), then 204/205 (`rq-worker@204/@205`). Pin 203 to `RQ_QUEUES=transcribe-low` in
+  `/opt/scriber/.env` if it must stay a free-traffic fallback — the code default would hand the 14-thread
+  CPU box the paid lane too, and it would win the race against an idle P4 often enough to matter.
 - **Docker Hub is unreliable from neo** (CloudFront timeouts). Ship images from 201 instead:
   `docker save` → `pct pull` → `pct push` → `docker load` (verify tags match the compose file first).
 - **Long in-CT commands die with the SSH session**: run them detached

@@ -33,7 +33,7 @@
     "for": "10m",
     "severity": "warning",
     "summary": "{{ $value }} jobs waiting across RQ queues",
-    "description": "More than 5 uploads have been queued for 10 minutes. Either the GPU workers are down, slower than arrival, or one long file is blocking. Check `redis-cli llen rq:queue:transcribe-gpu` on 203 and worker state on 204/205."
+    "description": "More than 5 uploads have been queued for 10 minutes. Either the GPU workers are down, slower than arrival, or one long file is blocking. Check `redis-cli llen rq:queue:transcribe-high` and `rq:queue:transcribe-low` on 203 plus worker state on 204/205. Backlog in the high lane means paying accounts are waiting: fix that first."
   },
   {
     "title": "Failed transcriptions (scriber-jobs)",

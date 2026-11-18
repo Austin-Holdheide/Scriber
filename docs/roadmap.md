@@ -48,14 +48,15 @@ Shipped history lives in `CHANGELOG.md`; operational rules and traps in `HANDOFF
    `videos_delete.py`, and the in-flight-job guard.
 3. **F-10 Countdown timer on the video page** (free accounts: days until auto-delete). Ships with F-9 —
    meaningless before it.
-4. **F-8 Queue priority lanes.** `Plan.queue` is `low`/`high` in `quota.py`, but `services/queue.py`
-   enqueues everything to the single `transcribe-gpu` queue, so **Pro buys no priority today**.
-   Wire `high`/`low` pairs in `enqueue_transcription` and have workers listen on both.
-5. **F-7b Hour-based metering.** `usage_events` counts transcriptions, not audio hours; "fair use" is
+4. **F-7b Hour-based metering.** `usage_events` counts transcriptions, not audio hours; "fair use" is
    policy with no measurement. Add `duration_s` to the event and sum it for reporting and throttling.
-6. Then product depth, biggest first: **F-6 transcode** (free 240p / Pro 720p, CPU ffmpeg jobs — the
+5. Then product depth, biggest first: **F-6 transcode** (free 240p / Pro 720p, CPU ffmpeg jobs — the
    largest remaining build), **F-1 burn-in subtitles**, **F-4 watermark toggle**, **F-3/T-8 bulk upload**
    and a dedicated upload page.
+6. **Ship the queue lanes to prod.** Code is on dev and verified; prod 202–205 still run the single
+   `transcribe-gpu` lane. Drain check then rollout order are in `docs/runbook.md` ("Rolling the lanes
+   to prod"). Do it *before* taking real money: the whole point is that a paid upload is not queued
+   behind free traffic.
 
 ## Backlog
 
@@ -102,6 +103,15 @@ Shipped history lives in `CHANGELOG.md`; operational rules and traps in `HANDOFF
   green run on a throwaway PR before trusting it as a gate.
 
 ## Done ledger (newest first)
+
+- **F-8 Queue priority lanes (2026-11-18, dev only).** `quota.lane_for_plan/lane_for_user` decide the
+  lane; uploads land in `transcribe-high` (premium/admin) or `transcribe-low` (free), and workers read
+  `high` first. Proven on 206: worker logged `listening on transcribe-high, transcribe-low`, then with
+  both queues pre-loaded (free enqueued first) the parent process dequeued **high before low**, and
+  `RCPT`-style per-lane `LLEN` confirmed each job landed in its own queue. 82 tests pass, including
+  `tests/test_queue_lanes.py` (unknown/missing plans fall to the free lane; `ingest.finalize_upload`
+  passes the plan's lane; legacy `RQ_QUEUE` cannot outrank a lane). Prod 202–205 still single-lane.
+  Requeue sweeper and re-transcribe carry the lane too, so a requeued Pro job does not drop to free.
 
 - **Email routing live (F-5b, 2026-11-18).** Cloudflare Email Routing on `scribly.cc`: MX ×3
   (`route1/2/3.mx.cloudflare.net`), the null SPF `v=spf1 -all` replaced by

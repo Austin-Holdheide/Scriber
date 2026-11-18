@@ -18,6 +18,7 @@ from pathlib import Path
 from fastapi import APIRouter, Depends, HTTPException
 
 from app.config import settings
+from app.services import quota
 from app.services.supabase_client import admin_client
 from app.services.auth import get_current_user
 from app.services.queue import enqueue_transcription
@@ -79,7 +80,8 @@ def retranscribe(video_id: str, user_id: str = Depends(get_current_user)):
         "id": job_id, "video_id": video_id, "user_id": user_id, "stage": "queued", "progress": 0,
     }).execute()
     admin_client().table("videos").update({"status": "queued"}).eq("id", video_id).execute()
-    enqueue_transcription(job_id=job_id, video_id=video_id, storage_path=v["storage_path"])
+    enqueue_transcription(job_id=job_id, video_id=video_id, storage_path=v["storage_path"],
+                          lane=quota.lane_for_user(user_id))
     return {"job_id": job_id, "artifacts_removed": removed}
 
 

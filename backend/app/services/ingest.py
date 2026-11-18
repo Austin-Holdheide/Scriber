@@ -76,7 +76,8 @@ def finalize_upload(*, user_id: str, dest: Path, filename: str, ext: str,
         log.exception("db insert failed")
         raise HTTPException(500, "db insert failed")
 
-    enqueue_transcription(job_id=job_id, video_id=vid, storage_path=row["storage_path"])
+    enqueue_transcription(job_id=job_id, video_id=vid, storage_path=row["storage_path"],
+                          lane=quota.lane_for_plan(plan.name))
     # meter only once the work is genuinely accepted
     quota.record(user_id, "transcription", video_id=vid)
 
